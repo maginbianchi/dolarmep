@@ -1,4 +1,5 @@
 import configparser
+import os
 import requests
 import simplejson
 import pandas as pd
@@ -243,8 +244,14 @@ to_get_data = [
 
 
 def get_token():
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+    CONFIG_FILE_PATH = os.path.join(PROJECT_ROOT, "config.ini")
+    if not os.path.exists(CONFIG_FILE_PATH):
+        raise FileNotFoundError(
+            f"Credentials file not found at {CONFIG_FILE_PATH}. Please create it."
+        )
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(CONFIG_FILE_PATH)
     usuario = config['credentials']['balanz_username']
     password = config['credentials']['balanz_password']
 

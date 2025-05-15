@@ -1,1 +1,7 @@
+# I've run this command: git update-index --skip-worktree config.ini
+# to ignore changes to this file, but I still want to keep it in the repo.
+# To reset this, run: git update-index --no-skip-worktree config.ini
+# Same for token.csv
+
 config.ini
+token.csv
