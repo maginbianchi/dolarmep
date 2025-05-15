@@ -1,3 +1,5 @@
+from datetime import datetime
+import math
 import time
 import numpy as np
 from tabulate import tabulate
@@ -57,17 +59,31 @@ class DataFrameHandler:
 
 
 def create_subscription_message(instrumentos):
-    aux = (
-        ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in instrumentos]
-        + ["md.bm_MERV_{0}_24hs".format(inst[1]) for inst in instrumentos]
-        + ["md.bm_MERV_{0}_CI".format(inst[0]) for inst in instrumentos]
-        + ["md.bm_MERV_{0}_CI".format(inst[1]) for inst in instrumentos]
-    )
-    return (
-        '{"_req":"S","topicType":"md","topics":'
-        + str(aux).replace(" ", "").replace("'", '"')
-        + ',"replace":false}'
-    )
+    now = datetime.now()
+    closeTimeCI = datetime.now().replace(hour=16, minute=30, second=0, microsecond=0)
+
+    if now < closeTimeCI:
+        aux = (
+            ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in instrumentos]
+            + ["md.bm_MERV_{0}_24hs".format(inst[1]) for inst in instrumentos]
+            + ["md.bm_MERV_{0}_CI".format(inst[0]) for inst in instrumentos]
+            + ["md.bm_MERV_{0}_CI".format(inst[1]) for inst in instrumentos]
+        )
+        return (
+            '{"_req":"S","topicType":"md","topics":'
+            + str(aux).replace(" ", "").replace("'", '"')
+            + ',"replace":false}'
+        )
+    else:
+        aux = (
+            ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in instrumentos]
+            + ["md.bm_MERV_{0}_24hs".format(inst[1]) for inst in instrumentos]
+        )
+        return (
+            '{"_req":"S","topicType":"md","topics":'
+            + str(aux).replace(" ", "").replace("'", '"')
+            + ',"replace":false}'
+        )
 
 
 class WebSocketClient:
@@ -76,7 +92,7 @@ class WebSocketClient:
         self.DataFrameHandler = DataFrameHandler
 
     def connect(self):
-        websocket.enableTrace(True)
+        # websocket.enableTrace(True)
         ws = websocket.WebSocketApp(
             self.url,
             on_open=self.on_open,
@@ -97,11 +113,11 @@ class WebSocketClient:
         if message[0] != "X":
             if message[0] == "M":
                 data.append(message)
-                print("\nReceived String")
+                # print("\nReceived String")
             else:
                 try:
                     data = json.loads(message)
-                    print("\nReceived JSON array")
+                    # print("\nReceived JSON array")
                 except json.JSONDecodeError as e:
                     print(f"\nJSON Decode Error: {e}")
                     return
@@ -141,9 +157,10 @@ class Executer:
             "\n##############################################################################################\n"
         )
 
+
         ratio = 1.002
         USD_a_pesos_MAX = self.df.USD_a_pesos.max()
-        USDCI_a_pesos_MAX = self.df.USDCI_a_pesos.max()
+        USDCI_a_pesos_MAX = self.df.USDCI_a_pesos.max() if not math.isnan(self.df.USDCI_a_pesos.max()) else 0
         pesos_a_USD_Min = self.df[self.df.pesos_a_USD > 1].pesos_a_USD.min()
 
         # Verifico que el maximo entre "USD a pesos" o "USDCI a pesos" sea mayor a "pesos a USD" (multiplicado por el ratio)
@@ -432,11 +449,11 @@ if __name__ == "__main__":
         "ARC1O",
         "CRCJO",
         "RUCAO",
-        # "MRCAO",
-        # "MR35O",
+        "MRCAO",
+        "MR35O",
         "MSSEO",
-        # "LECBO",
-        # "LECGO",
+        "LECBO",
+        "LECGO",
         "IRCIO",
         "LOC2O",
         "LOC3O",
@@ -577,6 +594,35 @@ if __name__ == "__main__":
         ["MSSGO", "MSSGD", None, None, None, None, None, None, None, None],
         ["PLC3O", "PLC3D", None, None, None, None, None, None, None, None],
         ["YM37O", "YM37D", None, None, None, None, None, None, None, None],
+        ["MR36O", "MR36D", None, None, None, None, None, None, None, None],
+        ["LECHO", "LECHD", None, None, None, None, None, None, None, None],
+        ["MRCAO", "MRCAD", None, None, None, None, None, None, None, None],
+        ["MR35O", "MR35D", None, None, None, None, None, None, None, None],
+        ["LECBO", "LECBD", None, None, None, None, None, None, None, None],
+        ["LECGO", "LECGD", None, None, None, None, None, None, None, None],
+        ["MRCLO", "MRCLD", None, None, None, None, None, None, None, None],
+        ["MRCQO", "MRCQD", None, None, None, None, None, None, None, None],
+        ["MRCOO", "MROCD", None, None, None, None, None, None, None, None],
+        ["LECAO", "LECAD", None, None, None, None, None, None, None, None],
+        ["LECEO", "LECED", None, None, None, None, None, None, None, None],
+        ["MRCUO", "MRCUD", None, None, None, None, None, None, None, None],
+        ["MRCYO", "MRCYD", None, None, None, None, None, None, None, None],
+        ["MR39O", "MR39D", None, None, None, None, None, None, None, None],
+        ["BA37D", "BA7DD", None, None, None, None, None, None, None, None],
+        ["NDT25", "NDT5D", None, None, None, None, None, None, None, None],
+        ["CO26", "CO26D", None, None, None, None, None, None, None, None],
+        ["PMM29", "PM29D", None, None, None, None, None, None, None, None],
+        ["SA24D", "S24DD", None, None, None, None, None, None, None, None],
+        ["AL30", "AL30D", None, None, None, None, None, None, None, None],
+        ["GD30", "GD30D", None, None, None, None, None, None, None, None],
+        ["AL35", "AL35D", None, None, None, None, None, None, None, None],
+        ["GD35", "GD35D", None, None, None, None, None, None, None, None],
+        ["BPJ25", "BPJ5D", None, None, None, None, None, None, None, None],
+        ["BPY26", "BPY6D", None, None, None, None, None, None, None, None],
+        ["BPOA7", "BPA7D", None, None, None, None, None, None, None, None],
+        ["BPOB7", "BPB7D", None, None, None, None, None, None, None, None],
+        ["BPOC7", "BPC7D", None, None, None, None, None, None, None, None],
+        ["BPOD7", "BPD7D", None, None, None, None, None, None, None, None],
     ]
     websocket_url = "wss://matriz.cocos.xoms.com.ar/ws?session_id=gqKxOszDYQQ7rKXTo3ypHhA%2FnaS%2BvkIeZGVFew7mxGElbIUxZv1DT4dpZo%2Fm8eny&conn_id=Vj2HkM3nQqa9VqD5N2NzJF2sdbX5UZ7%2B1OpC6CxnoNi4c2TuzJ4Tdg7GX%2FWDF0%2Bp"
 
@@ -587,7 +633,7 @@ if __name__ == "__main__":
     try:
         # Keep the main thread alive while the WebSocket listens
         while True:
-            time.sleep(10)
+            time.sleep(7)
             executer = Executer(dataframehandler.df.copy(), mis_activos)
             executer.execute()
     except KeyboardInterrupt:
