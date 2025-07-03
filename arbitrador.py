@@ -60,7 +60,7 @@ class DataFrameHandler:
 
 def create_subscription_message(instrumentos):
     now = datetime.now()
-    closeTimeCI = datetime.now().replace(hour=16, minute=30, second=0, microsecond=0)
+    closeTimeCI = datetime.now().replace(hour=16, minute=25, second=0, microsecond=0)
 
     if now < closeTimeCI:
         aux = (
@@ -75,10 +75,9 @@ def create_subscription_message(instrumentos):
             + ',"replace":false}'
         )
     else:
-        aux = (
-            ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in instrumentos]
-            + ["md.bm_MERV_{0}_24hs".format(inst[1]) for inst in instrumentos]
-        )
+        aux = ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in instrumentos] + [
+            "md.bm_MERV_{0}_24hs".format(inst[1]) for inst in instrumentos
+        ]
         return (
             '{"_req":"S","topicType":"md","topics":'
             + str(aux).replace(" ", "").replace("'", '"')
@@ -93,15 +92,15 @@ class WebSocketClient:
 
     def connect(self):
         # websocket.enableTrace(True)
-        ws = websocket.WebSocketApp(
+        self.ws = websocket.WebSocketApp(
             self.url,
             on_open=self.on_open,
             on_message=self.on_message,
             on_error=self.on_error,
             on_close=self.on_close,
         )
-        ws.keep_running = True
-        wst = threading.Thread(target=ws.run_forever)
+        self.ws.keep_running = True
+        wst = threading.Thread(target=self.ws.run_forever)
         wst.daemon = True
         wst.start()
 
@@ -131,6 +130,8 @@ class WebSocketClient:
 
     def on_close(self, ws, close_status_code, close_msg):
         print("\n### Closed connection ###")
+        self.ws.keep_running = False
+        self.ws.close()
 
     def on_open(self, ws):
         print("\n### Opened connection ###")
@@ -157,10 +158,14 @@ class Executer:
             "\n##############################################################################################\n"
         )
 
-
-        ratio = 1.002
+        ratio = 1.0015
+        ratio_CI = 1.002
         USD_a_pesos_MAX = self.df.USD_a_pesos.max()
-        USDCI_a_pesos_MAX = self.df.USDCI_a_pesos.max() if not math.isnan(self.df.USDCI_a_pesos.max()) else 0
+        USDCI_a_pesos_MAX = (
+            self.df.USDCI_a_pesos.max()
+            if not math.isnan(self.df.USDCI_a_pesos.max())
+            else 0
+        )
         pesos_a_USD_Min = self.df[self.df.pesos_a_USD > 1].pesos_a_USD.min()
 
         # Verifico que el maximo entre "USD a pesos" o "USDCI a pesos" sea mayor a "pesos a USD" (multiplicado por el ratio)
@@ -256,7 +261,7 @@ class Executer:
         pesosCI_a_USD_Min = self.df[self.df.pesosCI_a_USD > 1].pesosCI_a_USD.min()
 
         # Verifico que el maximo entre "USDCI a pesosCI" o "USD a pesosCI" sea mayor que el minimo entre "pesosCI a USDCI" y "pesosCI a USD" (multiplicado por el ratio)
-        if min(pesosCI_a_USDCI_Min, pesosCI_a_USD_Min) * ratio < max(
+        if min(pesosCI_a_USDCI_Min, pesosCI_a_USD_Min) * ratio_CI < max(
             USDCI_a_pesosCI_MAX, USD_a_pesosCI_MAX
         ):
             # Si la condición es verdadera, verifico cual de los dos USD a pesos es mayor, e imprimo la tabla
@@ -361,7 +366,7 @@ class Executer:
         self.df_dolares["%"] = (
             (self.df_dolares.prCompraDolar / self.df_dolares.prVentaDolarCI) - 1
         ) * 100
-        if not self.df_dolares.empty:
+        if not self.df_dolares[self.df_dolares["%"] > 0.20].empty:
             print(
                 tabulate(
                     self.df_dolares[["ticker", "prVentaDolarCI", "prCompraDolar", "%"]],  # type: ignore
@@ -387,7 +392,7 @@ class Executer:
                     .iloc[0:2],  # type: ignore
                     headers="keys",
                     tablefmt="mixed_outline",
-                    floatfmt=".5f",
+                    floatfmt=".2f",
                 )
             )
         else:
@@ -404,7 +409,7 @@ class Executer:
         self.df_dolares["%"] = (
             (self.df_dolares.prCompraDolarCI / self.df_dolares.prVentaDolar) - 1
         ) * 100
-        if not self.df_dolares.empty:
+        if not self.df_dolares[self.df_dolares["%"] > 0.20].empty:
             print(
                 tabulate(
                     self.df_dolares[["ticker", "prVentaDolar", "prCompraDolarCI", "%"]],  # type: ignore
@@ -416,7 +421,7 @@ class Executer:
             print("No hay arbitraje Dolar a DolarCI.")
 
         self.df_pesos = self.df.copy()[
-            (self.df.prVentaPesos < self.df.prCompraPesosCI)
+            (self.df.prVentaPesos <= self.df.prCompraPesosCI)
             & (self.df.prVentaPesos > 1)
         ].loc[self.df["ticker"].isin(self.mis_activos), :]
         self.df_pesos["%"] = (
@@ -445,26 +450,22 @@ if __name__ == "__main__":
         "GNCXO",
         "TLC1O",
         "TLCMO",
-        "MTCGO",
         "ARC1O",
         "CRCJO",
         "RUCAO",
         "MRCAO",
         "MR35O",
         "MSSEO",
-        "LECBO",
         "LECGO",
-        "IRCIO",
         "LOC2O",
         "LOC3O",
         "VSCRO",
         "VSCTO",
-        "PECGO",
-        "SNABO",
         "YFCJO",
         "YM34O",
         "NPCBO",
         "IRCPO",
+        "MGCOO",
     ]
 
     instrumentos = [
@@ -493,7 +494,6 @@ if __name__ == "__main__":
         ["YM34O", "YM34D", None, None, None, None, None, None, None, None],
         ["NPCBO", "NPCBD", None, None, None, None, None, None, None, None],
         ["IRCPO", "IRCPD", None, None, None, None, None, None, None, None],
-        ["CLSIO", "CLSID", None, None, None, None, None, None, None, None],
         ["YMCHO", "YMCHD", None, None, None, None, None, None, None, None],
         ["YMCJO", "YMCJD", None, None, None, None, None, None, None, None],
         ["YMCQO", "YMCQD", None, None, None, None, None, None, None, None],
@@ -513,7 +513,6 @@ if __name__ == "__main__":
         ["CAC8O", "CAC8D", None, None, None, None, None, None, None, None],
         ["NPCAO", "NPCAD", None, None, None, None, None, None, None, None],
         ["VSCLO", "VSCLD", None, None, None, None, None, None, None, None],
-        ["SNS9O", "SNS9D", None, None, None, None, None, None, None, None],
         ["LMS7O", "LMS7D", None, None, None, None, None, None, None, None],
         ["LMS8O", "LMS8D", None, None, None, None, None, None, None, None],
         ["CP34O", "CP34D", None, None, None, None, None, None, None, None],
@@ -525,6 +524,7 @@ if __name__ == "__main__":
         ["PECAO", "PECAD", None, None, None, None, None, None, None, None],
         ["PECBO", "PECBD", None, None, None, None, None, None, None, None],
         ["OTS2O", "OTS2D", None, None, None, None, None, None, None, None],
+        ["TSC3O", "TSC3D", None, None, None, None, None, None, None, None],
         ["VSCPO", "VSCPD", None, None, None, None, None, None, None, None],
         ["YMCVO", "YMCVD", None, None, None, None, None, None, None, None],
         ["HJCBO", "HJCBD", None, None, None, None, None, None, None, None],
@@ -548,7 +548,6 @@ if __name__ == "__main__":
         ["IRCNO", "IRCND", None, None, None, None, None, None, None, None],
         ["IRCOO", "IRCOD", None, None, None, None, None, None, None, None],
         ["PQCRO", "PQCRD", None, None, None, None, None, None, None, None],
-        ["TTC8O", "TTC8D", None, None, None, None, None, None, None, None],
         ["TTC9O", "TTC9D", None, None, None, None, None, None, None, None],
         ["GYC4O", "GYC4D", None, None, None, None, None, None, None, None],
         ["OTS3O", "OTS3D", None, None, None, None, None, None, None, None],
@@ -564,8 +563,6 @@ if __name__ == "__main__":
         ["RZABO", "RZABD", None, None, None, None, None, None, None, None],
         ["OZC3O", "OZC3D", None, None, None, None, None, None, None, None],
         ["TLCOO", "TLCOD", None, None, None, None, None, None, None, None],
-        ["BPCIO", "BPCID", None, None, None, None, None, None, None, None],
-        ["BYCKO", "BYCKD", None, None, None, None, None, None, None, None],
         ["VSCTO", "VSCTD", None, None, None, None, None, None, None, None],
         ["SIC1O", "SIC1D", None, None, None, None, None, None, None, None],
         ["MGCOO", "MGCOD", None, None, None, None, None, None, None, None],
@@ -594,6 +591,16 @@ if __name__ == "__main__":
         ["MSSGO", "MSSGD", None, None, None, None, None, None, None, None],
         ["PLC3O", "PLC3D", None, None, None, None, None, None, None, None],
         ["YM37O", "YM37D", None, None, None, None, None, None, None, None],
+        ["RCCRO", "RCCRD", None, None, None, None, None, None, None, None],
+        ["YFCMO", "YFCMD", None, None, None, None, None, None, None, None],
+        ["HJCIO", "HJCID", None, None, None, None, None, None, None, None],
+        ["TLCPO", "TLCPD", None, None, None, None, None, None, None, None],
+        ["CIC9O", "CIC9D", None, None, None, None, None, None, None, None],
+        ["PLC4O", "PLC4D", None, None, None, None, None, None, None, None],
+        ["BF35O", "BF35D", None, None, None, None, None, None, None, None],
+        ["ZPC2O", "ZPC2D", None, None, None, None, None, None, None, None],
+        ["VSCVO", "VSCVD", None, None, None, None, None, None, None, None],
+        ["OLC5O", "OLC5D", None, None, None, None, None, None, None, None],
         ["MR36O", "MR36D", None, None, None, None, None, None, None, None],
         ["LECHO", "LECHD", None, None, None, None, None, None, None, None],
         ["MRCAO", "MRCAD", None, None, None, None, None, None, None, None],
@@ -617,12 +624,13 @@ if __name__ == "__main__":
         ["GD30", "GD30D", None, None, None, None, None, None, None, None],
         ["AL35", "AL35D", None, None, None, None, None, None, None, None],
         ["GD35", "GD35D", None, None, None, None, None, None, None, None],
-        ["BPJ25", "BPJ5D", None, None, None, None, None, None, None, None],
         ["BPY26", "BPY6D", None, None, None, None, None, None, None, None],
         ["BPOA7", "BPA7D", None, None, None, None, None, None, None, None],
         ["BPOB7", "BPB7D", None, None, None, None, None, None, None, None],
         ["BPOC7", "BPC7D", None, None, None, None, None, None, None, None],
         ["BPOD7", "BPD7D", None, None, None, None, None, None, None, None],
+        ["SPY", "SPYD", None, None, None, None, None, None, None, None],
+        ["EWZ", "EWZD", None, None, None, None, None, None, None, None],
     ]
     websocket_url = "wss://matriz.cocos.xoms.com.ar/ws?session_id=gqKxOszDYQQ7rKXTo3ypHhA%2FnaS%2BvkIeZGVFew7mxGElbIUxZv1DT4dpZo%2Fm8eny&conn_id=Vj2HkM3nQqa9VqD5N2NzJF2sdbX5UZ7%2B1OpC6CxnoNi4c2TuzJ4Tdg7GX%2FWDF0%2Bp"
 
@@ -633,11 +641,8 @@ if __name__ == "__main__":
     try:
         # Keep the main thread alive while the WebSocket listens
         while True:
-            time.sleep(7)
+            time.sleep(5)
             executer = Executer(dataframehandler.df.copy(), mis_activos)
             executer.execute()
     except KeyboardInterrupt:
         print("Exiting...")
-
-        # Close the WebSocket connection
-        websocketclient.on_close(websocketclient, None, None)
