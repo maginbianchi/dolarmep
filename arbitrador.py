@@ -60,7 +60,7 @@ class DataFrameHandler:
 
 def create_subscription_message(instrumentos):
     now = datetime.now()
-    closeTimeCI = datetime.now().replace(hour=16, minute=25, second=0, microsecond=0)
+    closeTimeCI = datetime.now().replace(hour=16, minute=30, second=0, microsecond=0)
 
     if now < closeTimeCI:
         aux = (
@@ -158,7 +158,7 @@ class Executer:
             "\n##############################################################################################\n"
         )
 
-        ratio = 1.0015
+        ratio = 1.001
         ratio_CI = 1.002
         USD_a_pesos_MAX = self.df.USD_a_pesos.max()
         USDCI_a_pesos_MAX = (
@@ -448,17 +448,12 @@ if __name__ == "__main__":
         "YMCIO",
         "YMCXO",
         "GNCXO",
-        "TLC1O",
         "TLCMO",
         "ARC1O",
-        "CRCJO",
         "RUCAO",
-        "MRCAO",
-        "MR35O",
         "MSSEO",
-        "LECGO",
         "LOC2O",
-        "LOC3O",
+        "LOC5O",
         "VSCRO",
         "VSCTO",
         "YFCJO",
@@ -466,6 +461,7 @@ if __name__ == "__main__":
         "NPCBO",
         "IRCPO",
         "MGCOO",
+        "VBC1O",
     ]
 
     instrumentos = [
@@ -477,7 +473,6 @@ if __name__ == "__main__":
         ["MTCGO", "MTCGD", None, None, None, None, None, None, None, None],
         ["ARC1O", "ARC1D", None, None, None, None, None, None, None, None],
         ["BOL1O", "BOL1D", None, None, None, None, None, None, None, None],
-        ["CRCJO", "CRCJD", None, None, None, None, None, None, None, None],
         ["DNC3O", "DNC3D", None, None, None, None, None, None, None, None],
         ["DNC5O", "DNC5D", None, None, None, None, None, None, None, None],
         ["RUCAO", "RUCAD", None, None, None, None, None, None, None, None],
@@ -485,7 +480,6 @@ if __name__ == "__main__":
         ["IRCIO", "IRCID", None, None, None, None, None, None, None, None],
         ["LOC2O", "LOC2D", None, None, None, None, None, None, None, None],
         ["LOC3O", "LOC3D", None, None, None, None, None, None, None, None],
-        ["AEC1O", "AEC1D", None, None, None, None, None, None, None, None],
         ["VSCRO", "VSCRD", None, None, None, None, None, None, None, None],
         ["PECGO", "PECGD", None, None, None, None, None, None, None, None],
         ["SNABO", "SNABD", None, None, None, None, None, None, None, None],
@@ -497,22 +491,16 @@ if __name__ == "__main__":
         ["YMCHO", "YMCHD", None, None, None, None, None, None, None, None],
         ["YMCJO", "YMCJD", None, None, None, None, None, None, None, None],
         ["YMCQO", "YMCQD", None, None, None, None, None, None, None, None],
-        ["GN40O", "GN40D", None, None, None, None, None, None, None, None],
-        ["TLC5O", "TLC5D", None, None, None, None, None, None, None, None],
         ["IRCFO", "IRCFD", None, None, None, None, None, None, None, None],
-        ["IRCHO", "IRCHD", None, None, None, None, None, None, None, None],
         ["IRCJO", "IRCJD", None, None, None, None, None, None, None, None],
         ["MGCHO", "MGCHD", None, None, None, None, None, None, None, None],
-        ["MGCJO", "MGCJD", None, None, None, None, None, None, None, None],
         ["PNDCO", "PNDCD", None, None, None, None, None, None, None, None],
         ["MGC9O", "MGC9D", None, None, None, None, None, None, None, None],
-        ["RCCJO", "RCCJD", None, None, None, None, None, None, None, None],
         ["CS38O", "CS38D", None, None, None, None, None, None, None, None],
         ["CS44O", "CS44D", None, None, None, None, None, None, None, None],
         ["CAC5O", "CAC5D", None, None, None, None, None, None, None, None],
         ["CAC8O", "CAC8D", None, None, None, None, None, None, None, None],
         ["NPCAO", "NPCAD", None, None, None, None, None, None, None, None],
-        ["VSCLO", "VSCLD", None, None, None, None, None, None, None, None],
         ["LMS7O", "LMS7D", None, None, None, None, None, None, None, None],
         ["LMS8O", "LMS8D", None, None, None, None, None, None, None, None],
         ["CP34O", "CP34D", None, None, None, None, None, None, None, None],
@@ -522,7 +510,6 @@ if __name__ == "__main__":
         ["TTC7O", "TTC7D", None, None, None, None, None, None, None, None],
         ["PNXCO", "PNXCD", None, None, None, None, None, None, None, None],
         ["PECAO", "PECAD", None, None, None, None, None, None, None, None],
-        ["PECBO", "PECBD", None, None, None, None, None, None, None, None],
         ["OTS2O", "OTS2D", None, None, None, None, None, None, None, None],
         ["TSC3O", "TSC3D", None, None, None, None, None, None, None, None],
         ["VSCPO", "VSCPD", None, None, None, None, None, None, None, None],
@@ -566,8 +553,6 @@ if __name__ == "__main__":
         ["VSCTO", "VSCTD", None, None, None, None, None, None, None, None],
         ["SIC1O", "SIC1D", None, None, None, None, None, None, None, None],
         ["MGCOO", "MGCOD", None, None, None, None, None, None, None, None],
-        ["MTC1O", "MTC1D", None, None, None, None, None, None, None, None],
-        ["EAC3O", "EAC3D", None, None, None, None, None, None, None, None],
         ["HJCHO", "HJCHD", None, None, None, None, None, None, None, None],
         ["OT41O", "OT41D", None, None, None, None, None, None, None, None],
         ["OT42O", "OT42D", None, None, None, None, None, None, None, None],
@@ -601,6 +586,19 @@ if __name__ == "__main__":
         ["ZPC2O", "ZPC2D", None, None, None, None, None, None, None, None],
         ["VSCVO", "VSCVD", None, None, None, None, None, None, None, None],
         ["OLC5O", "OLC5D", None, None, None, None, None, None, None, None],
+        ["CACBO", "CACBD", None, None, None, None, None, None, None, None],
+        ["TLCQO", "TLCQD", None, None, None, None, None, None, None, None],
+        ["EMC1O", "EMC1D", None, None, None, None, None, None, None, None],
+        ["CS48O", "CS48D", None, None, None, None, None, None, None, None],
+        ["HVS1O", "HVS1D", None, None, None, None, None, None, None, None],
+        ["BACGO", "BACGD", None, None, None, None, None, None, None, None],
+        ["PFC2O", "PFC2D", None, None, None, None, None, None, None, None],
+        ["YM38O", "YM38D", None, None, None, None, None, None, None, None],
+        ["YM39O", "YM39D", None, None, None, None, None, None, None, None],
+        ["LOC5O", "LOC5D", None, None, None, None, None, None, None, None],
+        ["HJCJO", "HJCJD", None, None, None, None, None, None, None, None],
+        ["MGCQO", "MGCQD", None, None, None, None, None, None, None, None],
+        ["RC1CO", "RC1CD", None, None, None, None, None, None, None, None],
         ["MR36O", "MR36D", None, None, None, None, None, None, None, None],
         ["LECHO", "LECHD", None, None, None, None, None, None, None, None],
         ["MRCAO", "MRCAD", None, None, None, None, None, None, None, None],
@@ -625,9 +623,6 @@ if __name__ == "__main__":
         ["AL35", "AL35D", None, None, None, None, None, None, None, None],
         ["GD35", "GD35D", None, None, None, None, None, None, None, None],
         ["BPY26", "BPY6D", None, None, None, None, None, None, None, None],
-        ["BPOA7", "BPA7D", None, None, None, None, None, None, None, None],
-        ["BPOB7", "BPB7D", None, None, None, None, None, None, None, None],
-        ["BPOC7", "BPC7D", None, None, None, None, None, None, None, None],
         ["BPOD7", "BPD7D", None, None, None, None, None, None, None, None],
         ["SPY", "SPYD", None, None, None, None, None, None, None, None],
         ["EWZ", "EWZD", None, None, None, None, None, None, None, None],
