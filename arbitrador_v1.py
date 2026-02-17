@@ -58,37 +58,11 @@ class DataFrameHandler:
         # print(self.df[["ticker","prCompraPesosCI","prVentaPesosCI","prCompraPesos","prVentaPesos","prCompraDolarCI","prVentaDolarCI","prCompraDolar","prVentaDolar"]])
 
 
-def create_subscription_message(instrumentos):
-    now = datetime.now()
-    closeTimeCI = datetime.now().replace(hour=17, minute=00, second=0, microsecond=0)
-
-    if now < closeTimeCI:
-        aux = (
-            ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in instrumentos]
-            + ["md.bm_MERV_{0}_24hs".format(inst[1]) for inst in instrumentos]
-            + ["md.bm_MERV_{0}_CI".format(inst[0]) for inst in instrumentos]
-            + ["md.bm_MERV_{0}_CI".format(inst[1]) for inst in instrumentos]
-        )
-        return (
-            '{"_req":"S","topicType":"md","topics":'
-            + str(aux).replace(" ", "").replace("'", '"')
-            + ',"replace":false}'
-        )
-    else:
-        aux = ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in instrumentos] + [
-            "md.bm_MERV_{0}_24hs".format(inst[1]) for inst in instrumentos
-        ]
-        return (
-            '{"_req":"S","topicType":"md","topics":'
-            + str(aux).replace(" ", "").replace("'", '"')
-            + ',"replace":false}'
-        )
-
-
 class WebSocketClient:
-    def __init__(self, url, DataFrameHandler):
+    def __init__(self, url, DataFrameHandler, instrumentos):
         self.url = url
         self.DataFrameHandler = DataFrameHandler
+        self.instrumentos = instrumentos
 
     def connect(self):
         # websocket.enableTrace(True)
@@ -135,8 +109,20 @@ class WebSocketClient:
 
     def on_open(self, ws):
         print("\n### Opened connection ###")
-        ws.send(create_subscription_message(instrumentos))
+        ws.send(self.create_subscription_message())
 
+    def create_subscription_message(self):
+        aux = (
+            ["md.bm_MERV_{0}_24hs".format(inst[0]) for inst in self.instrumentos]
+            + ["md.bm_MERV_{0}_24hs".format(inst[1]) for inst in self.instrumentos]
+            + ["md.bm_MERV_{0}_CI".format(inst[0]) for inst in self.instrumentos]
+            + ["md.bm_MERV_{0}_CI".format(inst[1]) for inst in self.instrumentos]
+        )
+        return (
+            '{"_req":"S","topicType":"md","topics":'
+            + str(aux).replace(" ", "").replace("'", '"')
+            + ',"replace":false}'
+        )
 
 class Executer:
     def __init__(self, df, mis_activos):
@@ -449,10 +435,10 @@ if __name__ == "__main__":
         "BACGO",
         "CS39O",
         "GN49O",
-        "HJCHO",
         "IRCPO",
         "LOC5O",
         "MGCOO",
+        "MGCRO",
         "MSSEO",
         "NPCCO",
         "RUCAO",
@@ -485,14 +471,12 @@ if __name__ == "__main__":
         ["YM34O", "YM34D", None, None, None, None, None, None, None, None],
         ["IRCPO", "IRCPD", None, None, None, None, None, None, None, None],
         ["YMCJO", "YMCJD", None, None, None, None, None, None, None, None],
-        ["YMCQO", "YMCQD", None, None, None, None, None, None, None, None],
         ["IRCFO", "IRCFD", None, None, None, None, None, None, None, None],
         ["IRCJO", "IRCJD", None, None, None, None, None, None, None, None],
         ["PNDCO", "PNDCD", None, None, None, None, None, None, None, None],
         ["CS38O", "CS38D", None, None, None, None, None, None, None, None],
         ["CS44O", "CS44D", None, None, None, None, None, None, None, None],
         ["CAC5O", "CAC5D", None, None, None, None, None, None, None, None],
-        ["NPCAO", "NPCAD", None, None, None, None, None, None, None, None],
         ["LMS7O", "LMS7D", None, None, None, None, None, None, None, None],
         ["LMS8O", "LMS8D", None, None, None, None, None, None, None, None],
         ["CP34O", "CP34D", None, None, None, None, None, None, None, None],
@@ -508,11 +492,8 @@ if __name__ == "__main__":
         ["IRCLO", "IRCLD", None, None, None, None, None, None, None, None],
         ["LMS9O", "LMS9D", None, None, None, None, None, None, None, None],
         ["YFCIO", "YFCID", None, None, None, None, None, None, None, None],
-        ["RZ9BO", "RZ9BD", None, None, None, None, None, None, None, None],
         ["LIC6O", "LIC6D", None, None, None, None, None, None, None, None],
-        ["CRCLO", "CRCLD", None, None, None, None, None, None, None, None],
         ["PN35O", "PN35D", None, None, None, None, None, None, None, None],
-        ["SNSBO", "SNSBD", None, None, None, None, None, None, None, None],
         ["BYCHO", "BYCHD", None, None, None, None, None, None, None, None],
         ["MGCMO", "MGCMD", None, None, None, None, None, None, None, None],
         ["MGCNO", "MGCND", None, None, None, None, None, None, None, None],
@@ -530,13 +511,11 @@ if __name__ == "__main__":
         ["OTS3O", "OTS3D", None, None, None, None, None, None, None, None],
         ["XMC1O", "XMC1D", None, None, None, None, None, None, None, None],
         ["CIC7O", "CIC7D", None, None, None, None, None, None, None, None],
-        ["CIC8O", "CIC8D", None, None, None, None, None, None, None, None],
         ["PN36O", "PN36D", None, None, None, None, None, None, None, None],
         ["PN37O", "PN37D", None, None, None, None, None, None, None, None],
         ["CS47O", "CS47D", None, None, None, None, None, None, None, None],
         ["YFCKO", "YFCKD", None, None, None, None, None, None, None, None],
         ["YFCLO", "YFCLD", None, None, None, None, None, None, None, None],
-        ["RZABO", "RZABD", None, None, None, None, None, None, None, None],
         ["OZC3O", "OZC3D", None, None, None, None, None, None, None, None],
         ["TLCOO", "TLCOD", None, None, None, None, None, None, None, None],
         ["VSCTO", "VSCTD", None, None, None, None, None, None, None, None],
@@ -597,18 +576,15 @@ if __name__ == "__main__":
         ["CS49O", "CS49D", None, None, None, None, None, None, None, None],
         ["T652O", "T652D", None, None, None, None, None, None, None, None],
         ["AERBO", "AERBD", None, None, None, None, None, None, None, None],
-        ["BPCPO", "BPCPD", None, None, None, None, None, None, None, None],
         ["NBS1O", "NBS1D", None, None, None, None, None, None, None, None],
         ["VSCOO", "VSCOD", None, None, None, None, None, None, None, None],
         ["VSCUO", "VSCUD", None, None, None, None, None, None, None, None],
-        ["YMCMO", "YMCMD", None, None, None, None, None, None, None, None],
         ["ZPC3O", "ZPC3D", None, None, None, None, None, None, None, None],
         ["SBC1O", "SBC1D", None, None, None, None, None, None, None, None],
         ["RC2CO", "RC2CD", None, None, None, None, None, None, None, None],
         ["JNC6O", "JNC6D", None, None, None, None, None, None, None, None],
         ["YM41O", "YM41D", None, None, None, None, None, None, None, None],
         ["PN42O", "PN42D", None, None, None, None, None, None, None, None],
-        ["VAC3O", "VAC3D", None, None, None, None, None, None, None, None],
         ["OTS5O", "OTS5D", None, None, None, None, None, None, None, None],
         ["VSCWO", "VSCWD", None, None, None, None, None, None, None, None],
         ["TTCDO", "TTCDD", None, None, None, None, None, None, None, None],
@@ -625,7 +601,20 @@ if __name__ == "__main__":
         ["BPCUO", "BPCUD", None, None, None, None, None, None, None, None],
         ["CS50O", "CS50D", None, None, None, None, None, None, None, None],
         ["OLC6O", "OLC6D", None, None, None, None, None, None, None, None],
+        ["YFCOO", "YFCOD", None, None, None, None, None, None, None, None],
+        ["PN43O", "PN43D", None, None, None, None, None, None, None, None],
+        ["CS51O", "CS51D", None, None, None, None, None, None, None, None],
+        ["TLCTO", "TLCTD", None, None, None, None, None, None, None, None],
+        ["BACHO", "BACHD", None, None, None, None, None, None, None, None],
+        ["LOC6O", "LOC6D", None, None, None, None, None, None, None, None],
+        ["FO4AO", "FO4AD", None, None, None, None, None, None, None, None],
+        ["SNEBO", "SNEBD", None, None, None, None, None, None, None, None],
+        ["MIC4O", "MIC4D", None, None, None, None, None, None, None, None],
         ["CACDO", "CACDD", None, None, None, None, None, None, None, None],
+        ["RUCEO", "RUCED", None, None, None, None, None, None, None, None],
+        ["AFCJO", "AFCJD", None, None, None, None, None, None, None, None],
+        ["AFCKO", "AFCKD", None, None, None, None, None, None, None, None],
+        ["AFCLO", "AFCLD", None, None, None, None, None, None, None, None],
         ["BA37D", "BA7DD", None, None, None, None, None, None, None, None],
         ["NDT25", "NDT5D", None, None, None, None, None, None, None, None],
         ["CO26", "CO26D", None, None, None, None, None, None, None, None],
@@ -641,7 +630,7 @@ if __name__ == "__main__":
     websocket_url = "wss://matriz.cocos.xoms.com.ar/ws?session_id=gqKxOszDYQQ7rKXTo3ypHhA%2FnaS%2BvkIeZGVFew7mxGElbIUxZv1DT4dpZo%2Fm8eny&conn_id=Vj2HkM3nQqa9VqD5N2NzJF2sdbX5UZ7%2B1OpC6CxnoNi4c2TuzJ4Tdg7GX%2FWDF0%2Bp"
 
     dataframehandler = DataFrameHandler(instrumentos)
-    websocketclient = WebSocketClient(websocket_url, dataframehandler)
+    websocketclient = WebSocketClient(websocket_url, dataframehandler, instrumentos)
     wst = websocketclient.connect()
 
     try:
