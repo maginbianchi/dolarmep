@@ -20,7 +20,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("arbitrador.log", encoding="utf-8"),
+        logging.FileHandler("logs/arbitrador.log", encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)
@@ -94,27 +94,47 @@ class DataFrameHandler:
         if "marketData" in data and data["marketData"]:
             md = data["marketData"]
             symbol = data["instrumentId"]["symbol"]
-            bid = md.get("BI", [{}])[0].get("price", "N/A") if "BI" in md else "N/A"
-            offer = md.get("OF", [{}])[0].get("price", "N/A") if "OF" in md else "N/A"
+            bid = md.get("BI", [{}])[0].get("price") if md.get('BI') is not None and md.get('BI') != [] else None
+            offer = md.get("OF", [{}])[0].get("price") if md.get('OF') is not None and md.get('OF') != [] else None
 
-            if symbol.__contains__("_24hs"):
-                ticker = symbol.removeprefix("MERV - XMEV -").removesuffix("- 24hs")
-                self.df.loc[
-                    self.df.ticker == ticker, ["prCompraPesos", "prVentaPesos"]
-                ] = np.array([bid, offer]).astype(float)
-                self.df.loc[
-                    self.df.tickerD == ticker, ["prCompraDolar", "prVentaDolar"]
-                ] = np.array([bid, offer]).astype(float)
-            elif symbol.__contains__("_CI"):
-                ticker = symbol.removeprefix("M:bm_MERV_").removesuffix("_CI")
-                self.df.loc[
-                    self.df.ticker == ticker, ["prCompraPesosCI", "prVentaPesosCI"]
-                ] = np.array([bid, offer]).astype(float)
-                self.df.loc[
-                    self.df.tickerD == ticker, ["prCompraDolarCI", "prVentaDolarCI"]
-                ] = np.array([bid, offer]).astype(float)
 
-        # print(self.df[["ticker","prCompraPesosCI","prVentaPesosCI","prCompraPesos","prVentaPesos","prCompraDolarCI","prVentaDolarCI","prCompraDolar","prVentaDolar"]])
+            if symbol.__contains__("- 24hs"):
+                ticker = symbol.removeprefix("MERV - XMEV - ").removesuffix("- 24hs").strip()
+                if bid:
+                    self.df.loc[
+                        self.df.ticker == ticker, ["prCompraPesos"]
+                    ] = np.array([bid]).astype(float)
+                    self.df.loc[
+                        self.df.tickerD == ticker, ["prCompraDolar"]
+                    ] = np.array([bid]).astype(float)
+
+                if offer:
+                    self.df.loc[
+                        self.df.ticker == ticker, ["prVentaPesos"]
+                    ] = np.array([offer]).astype(float)
+                    self.df.loc[
+                        self.df.tickerD == ticker, ["prVentaDolar"]
+                    ] = np.array([offer]).astype(float)
+
+            elif symbol.__contains__("- CI"):
+                ticker = symbol.removeprefix("MERV - XMEV - ").removesuffix("- CI").strip()
+                if bid:
+                    self.df.loc[
+                        self.df.ticker == ticker, ["prCompraPesosCI"]
+                    ] = np.array([bid]).astype(float)
+                    self.df.loc[
+                        self.df.tickerD == ticker, ["prCompraDolarCI"]
+                    ] = np.array([bid]).astype(float)
+
+                if offer:
+                    self.df.loc[
+                        self.df.ticker == ticker, ["prVentaPesosCI"]
+                    ] = np.array([offer]).astype(float)
+                    self.df.loc[
+                        self.df.tickerD == ticker, ["prVentaDolarCI"]
+                    ] = np.array([offer]).astype(float)
+
+        #print(self.df[["ticker","prCompraPesosCI","prVentaPesosCI","prCompraPesos","prVentaPesos","prCompraDolarCI","prVentaDolarCI","prCompraDolar","prVentaDolar"]])
 
 
 class WebSocketClient:
@@ -252,9 +272,7 @@ class Executer:
         pesos_a_USD_Min = self.df[self.df.pesos_a_USD > 1].pesos_a_USD.min()
 
         # Verifico que el maximo entre "USD a pesos" o "USDCI a pesos" sea mayor a "pesos a USD" (multiplicado por el ratio)
-        if pesos_a_USD_Min * self.ratio < max(
-            USD_a_pesos_MAX, USDCI_a_pesos_MAX / self.ratio
-        ):
+        if pesos_a_USD_Min * self.ratio < max(USD_a_pesos_MAX, USDCI_a_pesos_MAX / self.ratio):
             # Si la condición es verdadera, verifico cual de los dos es mayor e imprimo la tabla
             if USD_a_pesos_MAX * self.ratio >= USDCI_a_pesos_MAX:
                 self.df_USD_a_p = self.df.sort_values(
@@ -333,6 +351,7 @@ class Executer:
             )
         else:
             print("No hay arbitraje Pesos a DolarCI.")
+
 
     def detect_ci_arbitrage(self) -> None:
         print(
@@ -441,6 +460,7 @@ class Executer:
         else:
             print("NO HAY ARBITRAJE EN CI")
 
+
     def detect_ci_to_24hs(self) -> None:
         print(
             "---------------------------------------------------------------------------------------------"
@@ -489,7 +509,6 @@ class Executer:
         print(
             "---------------------------------------------------------------------------------------------"
         )
-
         self.df_dolares = self.df.copy()[
             (self.df.prVentaDolar < self.df.prCompraDolarCI)
             & (self.df.prVentaDolar > 1)
@@ -719,13 +738,15 @@ if __name__ == "__main__":
         ["SNEBO", "SNEBD", None, None, None, None, None, None, None, None],
         ["MIC4O", "MIC4D", None, None, None, None, None, None, None, None],
         ["CACDO", "CACDD", None, None, None, None, None, None, None, None],
-        # ["RUCEO", "RUCED", None, None, None, None, None, None, None, None],
+        ["RUCEO", "RUCED", None, None, None, None, None, None, None, None],
         ["AFCJO", "AFCJD", None, None, None, None, None, None, None, None],
         ["AFCKO", "AFCKD", None, None, None, None, None, None, None, None],
         ["AFCLO", "AFCLD", None, None, None, None, None, None, None, None],
+        ["SXC2O", "SXC2D", None, None, None, None, None, None, None, None],
         ["BA37D", "BA7DD", None, None, None, None, None, None, None, None],
         ["NDT25", "NDT5D", None, None, None, None, None, None, None, None],
         ["CO26", "CO26D", None, None, None, None, None, None, None, None],
+        ["CO35", "CO35D", None, None, None, None, None, None, None, None],
         ["PMM29", "PM29D", None, None, None, None, None, None, None, None],
         ["SA24D", "S24DD", None, None, None, None, None, None, None, None],
         ["AL30", "AL30D", None, None, None, None, None, None, None, None],
@@ -772,3 +793,4 @@ if __name__ == "__main__":
             executer.execute()
     except KeyboardInterrupt:
         print("Exiting...")
+        websocket_client.ws.close()

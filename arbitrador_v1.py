@@ -1,4 +1,3 @@
-from datetime import datetime
 import math
 import time
 import numpy as np
@@ -104,12 +103,19 @@ class WebSocketClient:
 
     def on_close(self, ws, close_status_code, close_msg):
         print("\n### Closed connection ###")
-        self.ws.keep_running = False
-        self.ws.close()
+        print(f"WebSocket cerrado (code: {close_status_code}): {close_msg}")
+        time.sleep(5)  # simple backoff
+        self.connect()  # Reconnect automáticamente
 
     def on_open(self, ws):
         print("\n### Opened connection ###")
         ws.send(self.create_subscription_message())
+
+    def stop_websocket(self):
+        if self.ws:
+            self.ws.close()
+            print("WebSocket detenido")
+        self.ws = None
 
     def create_subscription_message(self):
         aux = (
@@ -123,6 +129,7 @@ class WebSocketClient:
             + str(aux).replace(" ", "").replace("'", '"')
             + ',"replace":false}'
         )
+
 
 class Executer:
     def __init__(self, df, mis_activos):
@@ -615,9 +622,11 @@ if __name__ == "__main__":
         ["AFCJO", "AFCJD", None, None, None, None, None, None, None, None],
         ["AFCKO", "AFCKD", None, None, None, None, None, None, None, None],
         ["AFCLO", "AFCLD", None, None, None, None, None, None, None, None],
+        ["SXC2O", "SXC2D", None, None, None, None, None, None, None, None],
         ["BA37D", "BA7DD", None, None, None, None, None, None, None, None],
         ["NDT25", "NDT5D", None, None, None, None, None, None, None, None],
         ["CO26", "CO26D", None, None, None, None, None, None, None, None],
+        ["CO35", "CO35D", None, None, None, None, None, None, None, None],
         ["PMM29", "PM29D", None, None, None, None, None, None, None, None],
         ["SA24D", "S24DD", None, None, None, None, None, None, None, None],
         ["AL30", "AL30D", None, None, None, None, None, None, None, None],
@@ -641,3 +650,4 @@ if __name__ == "__main__":
             executer.execute()
     except KeyboardInterrupt:
         print("Exiting...")
+        websocketclient.stop_websocket()
