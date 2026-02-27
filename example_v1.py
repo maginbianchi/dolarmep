@@ -141,35 +141,32 @@ class WebSocketClient:
         return wst
 
     def on_message(self, ws, message):
-        # print("\nMessage: " + message)
         data = []
         if message[0] != "X":
             if message[0] == "M":
                 data.append(message)
-                # print("\nReceived String")
             else:
                 try:
                     data = json.loads(message)
-                    # print("\nReceived JSON array")
                 except json.JSONDecodeError as e:
-                    print(f"\nJSON Decode Error: {e}")
+                    logger.warning(f"❌ JSON Decode Error: {e}")
                     return
         else:
-            print("\nMessage is not market data")
+            logger.warning("Message is not market data")
             return
         self.dataManager.update_instrument_data(data)
 
     def on_error(self, ws, error):
-        print("\nError: " + str(error))
+        logger.error("Error: " + str(error))
 
     def on_close(self, ws, close_status_code, close_msg):
-        print("\n### Closed connection ###")
-        print(f"WebSocket cerrado (code: {close_status_code}): {close_msg}")
+        logger.info("### Closed connection ###")
+        logger.info(f"WebSocket cerrado (code: {close_status_code}): {close_msg}")
         time.sleep(5)  # simple backoff
         self.connect()  # Reconnect automáticamente
 
     def on_open(self, ws):
-        print("\n### Opened connection ###")
+        logger.info("### Opened connection ###")
         ws.send(self.create_subscription_message())
 
     def create_subscription_message(self):
@@ -187,7 +184,7 @@ class WebSocketClient:
     def stop_websocket(self):
         if self.ws:
             self.ws.close()
-            print("WebSocket detenido")
+            logger.info("WebSocket detenido")
         self.ws = None
 
 
@@ -208,14 +205,22 @@ class DataManager:
                     if item["ticker"] == ticker:
                         item["prCompraPesos"] = float(values[3])
                         item["prVentaPesos"] = float(values[4])
-                        item["siCompraPesos"] = float(values[2]) if values[2] != "" else None
-                        item["siVentaPesos"] = float(values[5]) if values[5] != "" else None
+                        item["siCompraPesos"] = (
+                            float(values[2]) if values[2] != "" else None
+                        )
+                        item["siVentaPesos"] = (
+                            float(values[5]) if values[5] != "" else None
+                        )
                         continue
                     if item["tickerD"] == ticker:
                         item["prCompraDolar"] = float(values[3])
                         item["prVentaDolar"] = float(values[4])
-                        item["siCompraDolar"] = float(values[2]) if values[2] != "" else None
-                        item["siVentaDolar"] = float(values[5]) if values[5] != "" else None
+                        item["siCompraDolar"] = (
+                            float(values[2]) if values[2] != "" else None
+                        )
+                        item["siVentaDolar"] = (
+                            float(values[5]) if values[5] != "" else None
+                        )
                         continue
 
 
@@ -240,7 +245,7 @@ class Executer:
 
         logger.info("Ejecutando estrategia de arbitraje → comparando ratios USD/pesos.")
 
-        ratio = 1.0007
+        ratio = 1.0005
         al30 = {}
         USD_a_pesos_AL30 = None
         pesos_a_USD_AL30 = None
@@ -271,8 +276,8 @@ class Executer:
                 if item["pesos_a_USD"] * ratio < USD_a_pesos_AL30:
                     logger.info(json.dumps(item, indent=2, ensure_ascii=False))
                     quant = min(
-                        item["siCompraPesos"],
-                        item["siVentaDolar"],
+                        item["siCompraDolar"],
+                        item["siVentaPesos"],
                         item["max_quant"],
                     )
 
@@ -363,8 +368,6 @@ class Executer:
     def dolarizar(self, dolarizador: Dict, quant: int, order_type: str = "LIMIT"):
         price_ratio = None
         first_price, second_price = None, None
-        # print(f"Enviando orden de compra en pesos: {dolarizador['prVentaPesos']}")
-        # print(f"Tipo de orden: {order_type}")
         # Enviar orden de compra en pesos
         orden_response = self.client.send_order(
             symbol=f"MERV - XMEV - {dolarizador['ticker']} - 24hs",  # Ticker D para dólares
@@ -451,8 +454,6 @@ class Executer:
     def pesificar(self, pesificador: Dict, quant: int, order_type: str = "LIMIT"):
         price_ratio = None
         first_price, second_price = None, None
-        # print(f"Enviando orden de compra en dolares: {pesificador['prVentaDolar']}")
-        # print(f"Tipo de orden: {order_type}")
         # Enviar orden de compra en dólares
         orden_response = self.client.send_order(
             symbol=f"MERV - XMEV - {pesificador['tickerD']} - 24hs",  # Ticker D para dólares
@@ -590,7 +591,7 @@ if __name__ == "__main__":
             "siVentaPesos": None,
             "siCompraDolar": None,
             "siVentaDolar": None,
-            "max_quant": 400,
+            "max_quant": 200,
         },
         {
             "ticker": "TLCTO",
@@ -761,6 +762,45 @@ if __name__ == "__main__":
             "siVentaDolar": None,
             "max_quant": 200,
         },
+        {
+            "ticker": "LOC6O",
+            "tickerD": "LOC6D",
+            "prCompraPesos": None,
+            "prVentaPesos": None,
+            "prCompraDolar": None,
+            "prVentaDolar": None,
+            "siCompraPesos": None,
+            "siVentaPesos": None,
+            "siCompraDolar": None,
+            "siVentaDolar": None,
+            "max_quant": 200,
+        },
+        {
+            "ticker": "OLC5O",
+            "tickerD": "OLC5D",
+            "prCompraPesos": None,
+            "prVentaPesos": None,
+            "prCompraDolar": None,
+            "prVentaDolar": None,
+            "siCompraPesos": None,
+            "siVentaPesos": None,
+            "siCompraDolar": None,
+            "siVentaDolar": None,
+            "max_quant": 1000,
+        },
+        {
+            "ticker": "PN43O",
+            "tickerD": "PN43D",
+            "prCompraPesos": None,
+            "prVentaPesos": None,
+            "prCompraDolar": None,
+            "prVentaDolar": None,
+            "siCompraPesos": None,
+            "siVentaPesos": None,
+            "siCompraDolar": None,
+            "siVentaDolar": None,
+            "max_quant": 1000,
+        },
     ]
 
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -798,5 +838,5 @@ if __name__ == "__main__":
                 snapshot
             )  # pasar una copia para evitar modificaciones concurrentes
     except KeyboardInterrupt:
-        print("Exiting...")
+        logger.info("Exiting...")
         websocket_client.stop_websocket()

@@ -432,8 +432,8 @@ class Executer:
                 if item["pesos_a_USD"] * ratio < USD_a_pesos_AL30:
                     logger.info(json.dumps(item, indent=2, ensure_ascii=False))
                     quant = min(
-                        item["siCompraPesos"],
-                        item["siVentaDolar"],
+                        item["siCompraDolar"],
+                        item["siVentaPesos"],
                         item["max_quant"],
                     )
 
@@ -524,8 +524,6 @@ class Executer:
     def dolarizar(self, dolarizador: Dict, quant: int, order_type: str = "LIMIT"):
         price_ratio = None
         first_price, second_price = None, None
-        # print(f"Enviando orden de compra en pesos: {dolarizador['prVentaPesos']}")
-        # print(f"Tipo de orden: {order_type}")
         # Enviar orden de compra en pesos
         orden_response = self.client.send_order(
             symbol=f"MERV - XMEV - {dolarizador['ticker']} - 24hs",  # Ticker D para dólares
@@ -612,8 +610,6 @@ class Executer:
     def pesificar(self, pesificador: Dict, quant: int, order_type: str = "LIMIT"):
         price_ratio = None
         first_price, second_price = None, None
-        # print(f"Enviando orden de compra en dolares: {pesificador['prVentaDolar']}")
-        # print(f"Tipo de orden: {order_type}")
         # Enviar orden de compra en dólares
         orden_response = self.client.send_order(
             symbol=f"MERV - XMEV - {pesificador['tickerD']} - 24hs",  # Ticker D para dólares
@@ -922,6 +918,116 @@ if __name__ == "__main__":
             "siVentaDolar": None,
             "max_quant": 200,
         },
+        {
+            "ticker": "LOC6O",
+            "tickerD": "LOC6D",
+            "prCompraPesos": None,
+            "prVentaPesos": None,
+            "prCompraDolar": None,
+            "prVentaDolar": None,
+            "siCompraPesos": None,
+            "siVentaPesos": None,
+            "siCompraDolar": None,
+            "siVentaDolar": None,
+            "max_quant": 200,
+        },
+        {
+            "ticker": "OLC5O",
+            "tickerD": "OLC5D",
+            "prCompraPesos": None,
+            "prVentaPesos": None,
+            "prCompraDolar": None,
+            "prVentaDolar": None,
+            "siCompraPesos": None,
+            "siVentaPesos": None,
+            "siCompraDolar": None,
+            "siVentaDolar": None,
+            "max_quant": 1000,
+        },
+        # {
+        #     "ticker": "PAMP",
+        #     "tickerD": "PAMPD",
+        #     "prCompraPesos": None,
+        #     "prVentaPesos": None,
+        #     "prCompraDolar": None,
+        #     "prVentaDolar": None,
+        #     "siCompraPesos": None,
+        #     "siVentaPesos": None,
+        #     "siCompraDolar": None,
+        #     "siVentaDolar": None,
+        #     "max_quant": 50,
+        #     "bond": False,
+        # },
+        # {
+        #     "ticker": "ALUA",
+        #     "tickerD": "ALUAD",
+        #     "prCompraPesos": None,
+        #     "prVentaPesos": None,
+        #     "prCompraDolar": None,
+        #     "prVentaDolar": None,
+        #     "siCompraPesos": None,
+        #     "siVentaPesos": None,
+        #     "siCompraDolar": None,
+        #     "siVentaDolar": None,
+        #     "max_quant": 50,
+        #     "bond": False,
+        # },
+        # {
+        #     "ticker": "TXAR",
+        #     "tickerD": "TXARD",
+        #     "prCompraPesos": None,
+        #     "prVentaPesos": None,
+        #     "prCompraDolar": None,
+        #     "prVentaDolar": None,
+        #     "siCompraPesos": None,
+        #     "siVentaPesos": None,
+        #     "siCompraDolar": None,
+        #     "siVentaDolar": None,
+        #     "max_quant": 100,
+        #     "bond": False,
+        # },
+        # {
+        #     "ticker": "YPFD",
+        #     "tickerD": "YPFDD",
+        #     "prCompraPesos": None,
+        #     "prVentaPesos": None,
+        #     "prCompraDolar": None,
+        #     "prVentaDolar": None,
+        #     "siCompraPesos": None,
+        #     "siVentaPesos": None,
+        #     "siCompraDolar": None,
+        #     "siVentaDolar": None,
+        #     "max_quant": 5,
+        #     "bond": False,
+        # },
+        # {
+        #     "ticker": "GGAL",
+        #     "tickerD": "GGALD",
+        #     "prCompraPesos": None,
+        #     "prVentaPesos": None,
+        #     "prCompraDolar": None,
+        #     "prVentaDolar": None,
+        #     "siCompraPesos": None,
+        #     "siVentaPesos": None,
+        #     "siCompraDolar": None,
+        #     "siVentaDolar": None,
+        #     "max_quant": 40,
+        #     "bond": False,
+        # },
+        # {
+        #     "ticker": "BBAR",
+        #     "tickerD": "BBARD",
+        #     "prCompraPesos": None,
+        #     "prVentaPesos": None,
+        #     "prCompraDolar": None,
+        #     "prVentaDolar": None,
+        #     "siCompraPesos": None,
+        #     "siVentaPesos": None,
+        #     "siCompraDolar": None,
+        #     "siVentaDolar": None,
+        #     "max_quant": 40,
+        #     "bond": False,
+        # },
     ]
 
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -1023,5 +1129,5 @@ if __name__ == "__main__":
                 snapshot
             )  # pasar una copia para evitar modificaciones concurrentes
     except KeyboardInterrupt:
-        print("Exiting...")
+        logger.info("Exiting...")
         websocket_client.stop_websocket()
