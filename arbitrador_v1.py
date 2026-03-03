@@ -440,9 +440,9 @@ if __name__ == "__main__":
     mis_activos = [
         "ARC1O",
         "CO35",
-        #"CS49O",
+        "CS49O",
         "GN49O",
-        #"IRCPO",
+        "IRCPO",
         "MGCOO",
         "MGCRO",
         "MSSEO",
@@ -451,7 +451,7 @@ if __name__ == "__main__":
         "TLCPO",
         "VSCTO",
         "YFCJO",
-        #"YM34O",
+        "YM34O",
         "YMCXO",
     ]
 
@@ -549,7 +549,7 @@ if __name__ == "__main__":
         ["YM37O", "YM37D", None, None, None, None, None, None, None, None],
         ["RCCRO", "RCCRD", None, None, None, None, None, None, None, None],
         ["YFCMO", "YFCMD", None, None, None, None, None, None, None, None],
-        #["HJCIO", "HJCID", None, None, None, None, None, None, None, None],
+        ["HJCIO", "HJCID", None, None, None, None, None, None, None, None],
         ["TLCPO", "TLCPD", None, None, None, None, None, None, None, None],
         ["CIC9O", "CIC9D", None, None, None, None, None, None, None, None],
         ["PLC4O", "PLC4D", None, None, None, None, None, None, None, None],

@@ -5,7 +5,7 @@ import time
 import threading
 import websocket  # pip install websocket-client
 from datetime import datetime
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Set
 import logging
 import os
 import configparser
@@ -229,37 +229,44 @@ class Executer:
         self.account = account
         self.client = client
 
-    def execute(self, instrumentos: List[Dict]):
+    @staticmethod
+    def _calculate_ratios(instrumentos: List[Dict]) -> None:
+        """
+        Calcula ratios USD/pesos para todos los instrumentos.
+
+        Args:
+            instrumentos: Lista de instrumentos
+        """
         for item in instrumentos:
             item["USD_a_pesos"] = (
                 float(item["prCompraPesos"] / item["prVentaDolar"])
-                if item["prCompraPesos"] and item["prVentaDolar"]
+                if item.get("prCompraPesos") and item.get("prVentaDolar")
                 else None
             )
             item["pesos_a_USD"] = (
                 float(item["prVentaPesos"] / item["prCompraDolar"])
-                if item["prVentaPesos"] and item["prCompraDolar"]
+                if item.get("prVentaPesos") and item.get("prCompraDolar")
                 else None
             )
-        # logger.info(f"Instrumentos actualizados: {instrumentos}")
+
+    def execute(
+        self,
+        instrumentos: List[Dict],
+        dolarizadores: Set[str],
+        pesificadores: Set[str],
+    ):
+        ratio = 1.0006
+
+        self._calculate_ratios(instrumentos)
 
         logger.info("Ejecutando estrategia de arbitraje → comparando ratios USD/pesos.")
 
-        ratio = 1.0005
-        al30 = {}
-        USD_a_pesos_AL30 = None
-        pesos_a_USD_AL30 = None
-
-        for item in instrumentos:
-            if item["ticker"] == "AL30":
-                if item["USD_a_pesos"] is None or item["pesos_a_USD"] is None:
-                    logger.warning(
-                        "AL30 no tiene datos completos para calcular ratios."
-                    )
-                    return
-                al30 = item
-                USD_a_pesos_AL30 = item["USD_a_pesos"]
-                pesos_a_USD_AL30 = item["pesos_a_USD"]
+        al30 = next((i for i in instrumentos if i["ticker"] == "AL30"), None)
+        if not al30:
+            logger.warning("AL30 no encontrado en instrumentos.")
+            return
+        USD_a_pesos_AL30 = al30.get("USD_a_pesos")
+        pesos_a_USD_AL30 = al30.get("pesos_a_USD")
 
         if not USD_a_pesos_AL30 or not pesos_a_USD_AL30:
             logger.warning("No se pudo calcular ratios para AL30. Verifica datos.")
@@ -274,6 +281,9 @@ class Executer:
                 continue
             else:
                 if item["pesos_a_USD"] * ratio < USD_a_pesos_AL30:
+                    if item["ticker"] not in dolarizadores:
+                        dolarizadores.add(item["ticker"])
+                        continue
                     logger.info(json.dumps(item, indent=2, ensure_ascii=False))
                     quant = min(
                         item["siCompraDolar"],
@@ -317,10 +327,17 @@ class Executer:
                         logger.warning(
                             "No se ejecutó la parte de AL30 porque la dolarización no se ejecutó."
                         )
+                else:
+                    if item["ticker"] in dolarizadores:
+                        logger.info(f"Eliminando {item['ticker']} de dolarizadores.")
+                        dolarizadores.discard(item["ticker"])
             if item["USD_a_pesos"] is None or item["USD_a_pesos"] <= 1:
                 continue
             else:
                 if pesos_a_USD_AL30 * ratio < item["USD_a_pesos"]:
+                    if item["ticker"] not in pesificadores:
+                        pesificadores.add(item["ticker"])
+                        continue
                     logger.info(json.dumps(item, indent=2, ensure_ascii=False))
                     quant = min(
                         item["siVentaDolar"],
@@ -364,6 +381,9 @@ class Executer:
                         logger.warning(
                             "No se ejecutó la parte de AL30 porque la pesificación no se ejecutó."
                         )
+                if item["ticker"] in pesificadores:
+                    logger.info(f"Eliminando {item['ticker']} de pesificadores.")
+                    pesificadores.discard(item["ticker"])
 
     def dolarizar(self, dolarizador: Dict, quant: int, order_type: str = "LIMIT"):
         price_ratio = None
@@ -538,269 +558,56 @@ class Executer:
         return False, price_ratio
 
 
-# ====================== EJEMPLO DE USO ======================
+# ====================== FUNCIÓN AUXILIAR ======================
+def create_instrument(ticker: str, tickerD: str, max_quant: int = 200) -> Dict:
+    """
+    Crea un diccionario de instrumento con valores inicializados.
+
+    Args:
+        ticker: Ticker en pesos
+        tickerD: Ticker en dólares
+        max_quant: Cantidad máxima permitida
+
+    Returns:
+        Dict: Diccionario de instrumento
+    """
+    return {
+        "ticker": ticker,
+        "tickerD": tickerD,
+        "prCompraPesos": None,
+        "prVentaPesos": None,
+        "prCompraDolar": None,
+        "prVentaDolar": None,
+        "siCompraPesos": None,
+        "siVentaPesos": None,
+        "siCompraDolar": None,
+        "siVentaDolar": None,
+        "max_quant": max_quant,
+    }
+
+
+# ====================== MAIN ======================
 if __name__ == "__main__":
     instrumentos = [
-        {
-            "ticker": "AL30",
-            "tickerD": "AL30D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1800,
-        },
-        {
-            "ticker": "YM34O",
-            "tickerD": "YM34D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "YMCXO",
-            "tickerD": "YMCXD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "RUCDO",
-            "tickerD": "RUCDD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "TLCTO",
-            "tickerD": "TLCTD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "PQCSO",
-            "tickerD": "PQCSD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "TLCPO",
-            "tickerD": "TLCPD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "IRCPO",
-            "tickerD": "IRCPD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "DNC7O",
-            "tickerD": "DNC7D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "DNC8O",
-            "tickerD": "DNC8D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "VSCVO",
-            "tickerD": "VSCVD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1000,
-        },
-        {
-            "ticker": "TSC4O",
-            "tickerD": "TSC4D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1000,
-        },
-        {
-            "ticker": "TTCDO",
-            "tickerD": "TTCDD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1000,
-        },
-        {
-            "ticker": "TLCMO",
-            "tickerD": "TLCMD",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1000,
-        },
-        {
-            "ticker": "PLC5O",
-            "tickerD": "PLC5D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1000,
-        },
-        {
-            "ticker": "YM37O",
-            "tickerD": "YM37D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "YM42O",
-            "tickerD": "YM42D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "LOC6O",
-            "tickerD": "LOC6D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 200,
-        },
-        {
-            "ticker": "OLC5O",
-            "tickerD": "OLC5D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1000,
-        },
-        {
-            "ticker": "PN43O",
-            "tickerD": "PN43D",
-            "prCompraPesos": None,
-            "prVentaPesos": None,
-            "prCompraDolar": None,
-            "prVentaDolar": None,
-            "siCompraPesos": None,
-            "siVentaPesos": None,
-            "siCompraDolar": None,
-            "siVentaDolar": None,
-            "max_quant": 1000,
-        },
+        create_instrument("AL30", "AL30D", 1800),
+        create_instrument("YM34O", "YM34D"),
+        create_instrument("YMCXO", "YMCXD"),
+        create_instrument("RUCDO", "RUCDD"),
+        create_instrument("TLCTO", "TLCTD"),
+        create_instrument("PQCSO", "PQCSD"),
+        create_instrument("TLCPO", "TLCPD"),
+        create_instrument("IRCPO", "IRCPD"),
+        create_instrument("DNC7O", "DNC7D"),
+        create_instrument("DNC8O", "DNC8D"),
+        create_instrument("VSCVO", "VSCVD", 1000),
+        create_instrument("TSC4O", "TSC4D", 1000),
+        create_instrument("TTCDO", "TTCDD", 1000),
+        create_instrument("TLCMO", "TLCMD", 1000),
+        create_instrument("YM37O", "YM37D"),
+        create_instrument("YM42O", "YM42D"),
+        create_instrument("LOC6O", "LOC6D"),
+        create_instrument("OLC5O", "OLC5D", 1000),
+        create_instrument("PN43O", "PN43D", 1000),
     ]
 
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -822,7 +629,6 @@ if __name__ == "__main__":
     )
 
     client = CocosMatrizClient(username=usuario, password=password)
-
     data_manager = DataManager(instrumentos)
     websocket_client = WebSocketClient(websocket_url, data_manager, instrumentos)
     wst = websocket_client.connect()
@@ -830,12 +636,14 @@ if __name__ == "__main__":
     executer = Executer(account=account, client=client)
 
     try:
+        dolarizadores: Set[str] = set()
+        pesificadores: Set[str] = set()
         # Keep the main thread alive while the WebSocket listens
         while True:
             time.sleep(3)
             snapshot = copy.deepcopy(instrumentos)
             executer.execute(
-                snapshot
+                snapshot, dolarizadores=dolarizadores, pesificadores=pesificadores
             )  # pasar una copia para evitar modificaciones concurrentes
     except KeyboardInterrupt:
         logger.info("Exiting...")
