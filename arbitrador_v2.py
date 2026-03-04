@@ -20,7 +20,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("logs/arbitrador.log", encoding="utf-8"),
+        logging.FileHandler("logs/arbitrador_v2.log", encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)
