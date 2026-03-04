@@ -3,13 +3,25 @@ import base64
 import json
 import time
 import threading
-import websocket  # pip install websocket-client
+import websocket
 from datetime import datetime
-from typing import Dict, List, Optional, Callable, Set
+from typing import Dict, List, Optional, Set
 import logging
 import os
 import configparser
 import copy
+
+# ====================== CONSTANTES ======================
+DEFAULT_API_URL = "https://api.cocos.xoms.com.ar"
+REQUEST_TIMEOUT = 15
+AUTH_TIMEOUT = 15
+MARKET_ID_DEFAULT = "ROFX"
+TIME_IN_FORCE_DEFAULT = "DAY"
+WEBSOCKET_RECONNECT_DELAY = 5
+ARBITER_RATIO = 1.0006
+AL30_MAX_QUANT_DEFAULT = 2000
+UPDATE_SLEEP_INTERVAL = 3
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,7 +40,7 @@ class CocosMatrizClient:
         self,
         username: str,
         password: str,
-        base_url: str = "https://api.cocos.xoms.com.ar",
+        base_url: str = DEFAULT_API_URL,
     ):
         self.base_url = base_url.rstrip("/")
         self.username = username
@@ -48,7 +60,7 @@ class CocosMatrizClient:
         url = f"{self.base_url}/auth/getToken"
         headers = {"X-Username": self.username, "X-Password": self.password}
         try:
-            response = requests.post(url, headers=headers, timeout=15)
+            response = requests.post(url, headers=headers, timeout=AUTH_TIMEOUT)
             response.raise_for_status()
             self.token = response.headers.get("X-Auth-Token")
             if self.token:
@@ -72,9 +84,9 @@ class CocosMatrizClient:
         quantity: int,
         price: Optional[float] = None,
         ord_type: str = "LIMIT",
-        market_id: str = "ROFX",  # ← Cambiado a BYMA por defecto
+        market_id: str = MARKET_ID_DEFAULT,  # ← Cambiado a BYMA por defecto
         account: str = "",
-        time_in_force: str = "DAY",
+        time_in_force: str = TIME_IN_FORCE_DEFAULT,
         **kwargs,
     ) -> Dict:
 
@@ -162,7 +174,7 @@ class WebSocketClient:
     def on_close(self, ws, close_status_code, close_msg):
         logger.info("### Closed connection ###")
         logger.info(f"WebSocket cerrado (code: {close_status_code}): {close_msg}")
-        time.sleep(5)  # simple backoff
+        time.sleep(WEBSOCKET_RECONNECT_DELAY)  # simple backoff
         self.connect()  # Reconnect automáticamente
 
     def on_open(self, ws):
@@ -189,39 +201,62 @@ class WebSocketClient:
 
 
 class DataManager:
-    def __init__(self, instrumentos: List[Dict]):
-        self.instrumentos = instrumentos
+    """Gerencia datos de instrumentos actualizados desde el WebSocket."""
 
-    def update_instrument_data(self, data: Dict):
-        for r in data:
-            values = str(r).split("|")
-            if values[3] == "":
-                values[3] = "-100"
-            if values[4] == "":
-                values[4] = "-100"
-            if values[0].__contains__("_24hs"):
-                ticker = values[0].removeprefix("M:bm_MERV_").removesuffix("_24hs")
-                for item in self.instrumentos:
-                    if item["ticker"] == ticker:
-                        item["prCompraPesos"] = float(values[3])
-                        item["prVentaPesos"] = float(values[4])
-                        item["siCompraPesos"] = (
-                            float(values[2]) if values[2] != "" else None
-                        )
-                        item["siVentaPesos"] = (
-                            float(values[5]) if values[5] != "" else None
-                        )
-                        continue
-                    if item["tickerD"] == ticker:
-                        item["prCompraDolar"] = float(values[3])
-                        item["prVentaDolar"] = float(values[4])
-                        item["siCompraDolar"] = (
-                            float(values[2]) if values[2] != "" else None
-                        )
-                        item["siVentaDolar"] = (
-                            float(values[5]) if values[5] != "" else None
-                        )
-                        continue
+    def __init__(self, instrumentos: List[Dict]) -> None:
+        """
+        Inicializa el gerenciador de datos.
+
+        Args:
+            instrumentos: Lista de instrumentos a monitorear
+        """
+        # Crear índices para acceso rápido O(1)
+        self.instrumentos_by_ticker = {
+            inst["ticker"]: inst for inst in instrumentos
+        }
+        self.instrumentos_by_tickerD = {
+            inst["tickerD"]: inst for inst in instrumentos
+        }
+
+    def update_instrument_data(self, data: List) -> None:
+        """
+        Actualiza datos de instrumentos a partir de mensajes del WebSocket.
+
+        Args:
+            data: Lista de mensajes del WebSocket con datos de mercado
+        """
+        for record in data:
+            values = str(record).split("|")
+            # Normalizar valores vacíos
+            values[3] = values[3] if values[3] else "-100"
+            values[4] = values[4] if values[4] else "-100"
+
+            if "_24hs" not in values[0]:
+                continue
+
+            ticker = (
+                values[0].removeprefix("M:bm_MERV_").removesuffix("_24hs")
+            )
+
+            # Actualizar por ticker de pesos
+            if ticker in self.instrumentos_by_ticker:
+                inst = self.instrumentos_by_ticker[ticker]
+                inst["prCompraPesos"] = float(values[3])
+                inst["prVentaPesos"] = float(values[4])
+                inst["siCompraPesos"] = (
+                    float(values[2]) if values[2] else None
+                )
+                inst["siVentaPesos"] = float(values[5]) if values[5] else None
+
+            # Actualizar por ticker de dólares
+            elif ticker in self.instrumentos_by_tickerD:
+                inst = self.instrumentos_by_tickerD[ticker]
+                inst["prCompraDolar"] = float(values[3])
+                inst["prVentaDolar"] = float(values[4])
+                inst["siCompraDolar"] = (
+                    float(values[2]) if values[2] else None
+                )
+                inst["siVentaDolar"] = float(values[5]) if values[5] else None
 
 
 class Executer:
@@ -255,7 +290,7 @@ class Executer:
         dolarizadores: Set[str],
         pesificadores: Set[str],
     ):
-        ratio = 1.0006
+        ratio = ARBITER_RATIO
 
         self._calculate_ratios(instrumentos)
 
@@ -273,8 +308,8 @@ class Executer:
             return
 
         max_quant_al30 = al30.get(
-            "max_quant", 2000
-        )  # Ejemplo: máximo 2000 contratos de AL30 por operación
+            "max_quant", AL30_MAX_QUANT_DEFAULT
+        ) 
 
         for item in instrumentos:
             if item["pesos_a_USD"] is None or item["pesos_a_USD"] <= 1:
@@ -306,10 +341,10 @@ class Executer:
                         f"Se dolarizaria a un precio de {item['pesos_a_USD']:.2f} pesos por dólar"
                     )
                     success, price_ratio = self.dolarizar(item, quant)
-                    logger.warning(
-                        f"Se dolarizó a: {price_ratio:.4f}"
+                    logger.info(
+                        f"✅ Se dolarizó a: {price_ratio:.4f}"
                         if price_ratio
-                        else "No se obtuvo price ratio en dolarización."
+                        else "❌ No se obtuvo price ratio en dolarización."
                     )
 
                     logger.info("COMPRAR AL30 EN DOLARES")
@@ -318,15 +353,16 @@ class Executer:
                         success2, price_ratio2 = self.pesificar(
                             al30, quant_al30, order_type="MARKET"
                         )
-                        logger.warning(
-                            f"Se pesificó a: {price_ratio2:.4f}"
+                        logger.info(
+                            f"✅ Se pesificó a: {price_ratio2:.4f}"
                             if price_ratio2
-                            else "No se obtuvo price ratio en pesificación."
+                            else "❌ No se obtuvo price ratio en pesificación."
                         )
                     else:
                         logger.warning(
                             "No se ejecutó la parte de AL30 porque la dolarización no se ejecutó."
                         )
+                    return  # Ejecutar solo una operación por ciclo.
                 else:
                     if item["ticker"] in dolarizadores:
                         logger.info(f"Eliminando {item['ticker']} de dolarizadores.")
@@ -360,10 +396,10 @@ class Executer:
                         f"Se pesificaria a un precio de {item['USD_a_pesos']:.2f} pesos por dólar"
                     )
                     success, price_ratio = self.pesificar(item, quant)
-                    logger.warning(
-                        f"Se pesificó a: {price_ratio:.4f}"
+                    logger.info(
+                        f"✅ Se pesificó a: {price_ratio:.4f}"
                         if price_ratio
-                        else "No se obtuvo price ratio en pesificación."
+                        else "❌ No se obtuvo price ratio en pesificación."
                     )
 
                     logger.info("COMPRAR AL30 EN PESOS")
@@ -372,15 +408,16 @@ class Executer:
                         success2, price_ratio2 = self.dolarizar(
                             al30, quant_al30, order_type="MARKET"
                         )
-                        logger.warning(
-                            f"Se dolarizó a: {price_ratio2:.4f}"
+                        logger.info(
+                            f"✅ Se dolarizó a: {price_ratio2:.4f}"
                             if price_ratio2
-                            else "No se obtuvo price ratio en dolarización."
+                            else "❌ No se obtuvo price ratio en dolarización."
                         )
                     else:
                         logger.warning(
                             "No se ejecutó la parte de AL30 porque la pesificación no se ejecutó."
                         )
+                    return  # Ejecutar solo una operación por ciclo.
                 if item["ticker"] in pesificadores:
                     logger.info(f"Eliminando {item['ticker']} de pesificadores.")
                     pesificadores.discard(item["ticker"])
@@ -400,8 +437,8 @@ class Executer:
             time_in_force="DAY",
         )
 
-        logger.info("Respuesta de la orden de compra en pesos:")
-        logger.info(orden_response)
+        # logger.info("Respuesta de la orden de compra en pesos:")
+        # logger.info(orden_response)
 
         if "error" in orden_response:
             logger.error("Error enviando orden de compra en pesos.")
@@ -442,8 +479,8 @@ class Executer:
                 time_in_force="DAY",
             )
 
-            logger.info("Respuesta de la orden complementaria de venta en dólares:")
-            logger.info(comp_response)
+            # logger.info("Respuesta de la orden complementaria de venta en dólares:")
+            # logger.info(comp_response)
             # logger.info(json.dumps(comp_response, indent=2, ensure_ascii=False))
 
             comp_cl_ord_id = comp_response.get("order", {}).get("clientId")
@@ -486,8 +523,8 @@ class Executer:
             time_in_force="DAY",
         )
 
-        logger.info("Respuesta de la orden de compra en dólares:")
-        logger.info(orden_response)
+        # logger.info("Respuesta de la orden de compra en dólares:")
+        # logger.info(orden_response)
 
         if "error" in orden_response:
             logger.error("Error enviando orden de compra en dolares.")
@@ -528,8 +565,8 @@ class Executer:
                 time_in_force="DAY",
             )
 
-            logger.info("Respuesta de la orden complementaria de venta en pesos:")
-            logger.info(comp_response)
+            # logger.info("Respuesta de la orden complementaria de venta en pesos:")
+            # logger.info(comp_response)
             # logger.info(json.dumps(comp_response, indent=2, ensure_ascii=False))
 
             comp_cl_ord_id = comp_response.get("order", {}).get("clientId")
@@ -608,6 +645,7 @@ if __name__ == "__main__":
         create_instrument("LOC6O", "LOC6D"),
         create_instrument("OLC5O", "OLC5D", 1000),
         create_instrument("PN43O", "PN43D", 1000),
+        create_instrument("AO27", "AO27D", 100),
     ]
 
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -640,7 +678,7 @@ if __name__ == "__main__":
         pesificadores: Set[str] = set()
         # Keep the main thread alive while the WebSocket listens
         while True:
-            time.sleep(3)
+            time.sleep(UPDATE_SLEEP_INTERVAL)
             snapshot = copy.deepcopy(instrumentos)
             executer.execute(
                 snapshot, dolarizadores=dolarizadores, pesificadores=pesificadores

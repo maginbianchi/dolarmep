@@ -1,60 +1,87 @@
+import configparser
 import math
+import os
 import time
-import numpy as np
 from tabulate import tabulate
 import websocket
 import pandas as pd
 import json
 import threading
+from typing import List, Tuple, Optional
+
+RATIO = 1.0008
+RATIO_CI = 1.0015
 
 
 class DataFrameHandler:
-    def __init__(self, instrumentos):
+    def __init__(self, instrumentos: List[List]) -> None:
         self.instrumentos = instrumentos
         self.df = self.create_df()
+        self._idx_t = {t: i for i, t in enumerate(self.df["ticker"])}
+        self._idx_tD = {t: i for i, t in enumerate(self.df["tickerD"])}
 
-    def create_df(self):
-        return pd.DataFrame(
-            data=self.instrumentos,
-            columns=[
-                "ticker",
-                "tickerD",
-                "prCompraPesosCI",
-                "prVentaPesosCI",
-                "prCompraPesos",
-                "prVentaPesos",
-                "prCompraDolarCI",
-                "prVentaDolarCI",
-                "prCompraDolar",
-                "prVentaDolar",
-            ],
-        )
+    def create_df(self) -> pd.DataFrame:
+        columns = [
+            "ticker",
+            "tickerD",
+            "prCompraPesosCI",
+            "prVentaPesosCI",
+            "prCompraPesos",
+            "prVentaPesos",
+            "prCompraDolarCI",
+            "prVentaDolarCI",
+            "prCompraDolar",
+            "prVentaDolar",
+        ]
+        return pd.DataFrame(data=self.instrumentos, columns=columns)
 
-    def update_df(self, data):
+    @staticmethod
+    def _parse_message(record: str) -> Optional[Tuple[str, float, float, bool]]:
+        """Extract ticker, bid/ask and CI flag from a market message string.
+
+        Returns a tuple (ticker, bid, ask, is_ci) or None if the message does not
+        contain a recognised topic.
+        """
+        vals = record.split("|")
+        # normalise empty bid/ask
+        bid = float(vals[3] or "-100")
+        ask = float(vals[4] or "-100")
+        topic = vals[0]
+        if topic.endswith("_24hs"):
+            ticker = topic.removeprefix("M:bm_MERV_").removesuffix("_24hs")
+            return ticker, bid, ask, False
+        if topic.endswith("_CI"):
+            ticker = topic.removeprefix("M:bm_MERV_").removesuffix("_CI")
+            return ticker, bid, ask, True
+        return None
+
+    def update_df(self, data: List) -> None:
+        """Update the stored DataFrame using a list of raw websocket records.
+
+        This method uses prebuilt index maps to avoid repeated filtering of the
+        frame (see item 1)."""
         for r in data:
-            values = str(r).split("|")
-            if values[3] == "":
-                values[3] = "-100"
-            if values[4] == "":
-                values[4] = "-100"
-            if values[0].__contains__("_24hs"):
-                ticker = values[0].removeprefix("M:bm_MERV_").removesuffix("_24hs")
-                self.df.loc[
-                    self.df.ticker == ticker, ["prCompraPesos", "prVentaPesos"]
-                ] = np.array([values[3], values[4]]).astype(float)
-                self.df.loc[
-                    self.df.tickerD == ticker, ["prCompraDolar", "prVentaDolar"]
-                ] = np.array([values[3], values[4]]).astype(float)
-            elif values[0].__contains__("_CI"):
-                ticker = values[0].removeprefix("M:bm_MERV_").removesuffix("_CI")
-                self.df.loc[
-                    self.df.ticker == ticker, ["prCompraPesosCI", "prVentaPesosCI"]
-                ] = np.array([values[3], values[4]]).astype(float)
-                self.df.loc[
-                    self.df.tickerD == ticker, ["prCompraDolarCI", "prVentaDolarCI"]
-                ] = np.array([values[3], values[4]]).astype(float)
+            parsed = self._parse_message(str(r))
+            if not parsed:
+                continue
+            ticker, bid, ask, is_ci = parsed
 
-        # print(self.df[["ticker","prCompraPesosCI","prVentaPesosCI","prCompraPesos","prVentaPesos","prCompraDolarCI","prVentaDolarCI","prCompraDolar","prVentaDolar"]])
+            idx = self._idx_t.get(ticker)
+            idxD = self._idx_tD.get(ticker)
+            if idx is not None:
+                if not is_ci:
+                    self.df.at[idx, "prCompraPesos"] = bid
+                    self.df.at[idx, "prVentaPesos"] = ask
+                else:
+                    self.df.at[idx, "prCompraPesosCI"] = bid
+                    self.df.at[idx, "prVentaPesosCI"] = ask
+            elif idxD is not None:
+                if not is_ci:
+                    self.df.at[idxD, "prCompraDolar"] = bid
+                    self.df.at[idxD, "prVentaDolar"] = ask
+                else:
+                    self.df.at[idxD, "prCompraDolarCI"] = bid
+                    self.df.at[idxD, "prVentaDolarCI"] = ask
 
 
 class WebSocketClient:
@@ -136,7 +163,7 @@ class Executer:
         self.mis_activos = mis_activos
         self.df = df
 
-    def execute(self):
+    def calculate_ratios(self) -> None:
         self.df["USD_a_pesos"] = self.df.prCompraPesos / self.df.prVentaDolar
         self.df["USDCI_a_pesos"] = self.df.prCompraPesos / self.df.prVentaDolarCI
         self.df["pesos_a_USD"] = self.df.prVentaPesos / self.df.prCompraDolar
@@ -147,12 +174,11 @@ class Executer:
         self.df["pesosCI_a_USD"] = self.df.prVentaPesosCI / self.df.prCompraDolar
         self.df["pesosCI_a_USDCI"] = self.df.prVentaPesosCI / self.df.prCompraDolarCI
 
+    def detect_main_arbitrage(self) -> None:
         print(
             "\n##############################################################################################\n"
         )
 
-        ratio = 1.0008
-        ratio_CI = 1.0015
         USD_a_pesos_MAX = self.df.USD_a_pesos.max()
         USDCI_a_pesos_MAX = (
             self.df.USDCI_a_pesos.max()
@@ -162,9 +188,11 @@ class Executer:
         pesos_a_USD_Min = self.df[self.df.pesos_a_USD > 1].pesos_a_USD.min()
 
         # Verifico que el maximo entre "USD a pesos" o "USDCI a pesos" sea mayor a "pesos a USD" (multiplicado por el ratio)
-        if pesos_a_USD_Min * ratio < max(USD_a_pesos_MAX, USDCI_a_pesos_MAX / ratio):
+        if pesos_a_USD_Min * RATIO < max(
+            USD_a_pesos_MAX, USDCI_a_pesos_MAX / RATIO
+        ):
             # Si la condición es verdadera, verifico cual de los dos es mayor e imprimo la tabla
-            if USD_a_pesos_MAX * ratio >= USDCI_a_pesos_MAX:
+            if USD_a_pesos_MAX * RATIO >= USDCI_a_pesos_MAX:
                 self.df_USD_a_p = self.df.sort_values(
                     by=["USD_a_pesos"], ascending=False
                 ).iloc[0:2]
@@ -242,6 +270,7 @@ class Executer:
         else:
             print("No hay arbitraje Pesos a DolarCI.")
 
+    def detect_ci_arbitrage(self) -> None:
         print(
             "-----------------------------------------CI--------------------------------------------------"
         )
@@ -254,7 +283,7 @@ class Executer:
         pesosCI_a_USD_Min = self.df[self.df.pesosCI_a_USD > 1].pesosCI_a_USD.min()
 
         # Verifico que el maximo entre "USDCI a pesosCI" o "USD a pesosCI" sea mayor que el minimo entre "pesosCI a USDCI" y "pesosCI a USD" (multiplicado por el ratio)
-        if min(pesosCI_a_USDCI_Min, pesosCI_a_USD_Min) * ratio_CI < max(
+        if min(pesosCI_a_USDCI_Min, pesosCI_a_USD_Min) * RATIO_CI < max(
             USDCI_a_pesosCI_MAX, USD_a_pesosCI_MAX
         ):
             # Si la condición es verdadera, verifico cual de los dos USD a pesos es mayor, e imprimo la tabla
@@ -348,6 +377,7 @@ class Executer:
         else:
             print("NO HAY ARBITRAJE EN CI")
 
+    def detect_ci_to_24hs(self) -> None:
         print(
             "---------------------------------------------------------------------------------------------"
         )
@@ -391,10 +421,10 @@ class Executer:
         else:
             print("No hay arbitraje PesosCI por Pesos.")
 
+    def detect_24hs_to_ci(self) -> None:
         print(
             "---------------------------------------------------------------------------------------------"
         )
-
         self.df_dolares = self.df.copy()[
             (self.df.prVentaDolar < self.df.prCompraDolarCI)
             & (self.df.prVentaDolar > 1)
@@ -435,6 +465,28 @@ class Executer:
             "\n##############################################################################################\n"
         )
 
+    def execute(self):
+        self.calculate_ratios()
+        self.detect_main_arbitrage()
+        self.detect_ci_arbitrage()
+        self.detect_ci_to_24hs()
+        self.detect_24hs_to_ci()
+
+
+# ====================== FUNCIÓN AUXILIAR ======================
+def create_instrument(ticker: str, tickerD: str) -> List:
+    """
+    Crea un array de instrumento con valores inicializados.
+
+    Args:
+        ticker: Ticker en pesos
+        tickerD: Ticker en dólares
+
+    Returns:
+        List: Lista de valores inicializados para el instrumento
+    """
+    return [ticker, tickerD, None, None, None, None, None, None, None, None]
+
 
 if __name__ == "__main__":
     mis_activos = [
@@ -456,186 +508,201 @@ if __name__ == "__main__":
     ]
 
     instrumentos = [
-        ["YMCIO", "YMCID", None, None, None, None, None, None, None, None],
-        ["YMCXO", "YMCXD", None, None, None, None, None, None, None, None],
-        ["TLC1O", "TLC1D", None, None, None, None, None, None, None, None],
-        ["TLCMO", "TLCMD", None, None, None, None, None, None, None, None],
-        ["MTCGO", "MTCGD", None, None, None, None, None, None, None, None],
-        ["ARC1O", "ARC1D", None, None, None, None, None, None, None, None],
-        ["BOL1O", "BOL1D", None, None, None, None, None, None, None, None],
-        ["DNC3O", "DNC3D", None, None, None, None, None, None, None, None],
-        ["DNC5O", "DNC5D", None, None, None, None, None, None, None, None],
-        ["MSSEO", "MSSED", None, None, None, None, None, None, None, None],
-        ["LOC3O", "LOC3D", None, None, None, None, None, None, None, None],
-        ["VSCRO", "VSCRD", None, None, None, None, None, None, None, None],
-        ["SNABO", "SNABD", None, None, None, None, None, None, None, None],
-        ["RUCDO", "RUCDD", None, None, None, None, None, None, None, None],
-        ["YFCJO", "YFCJD", None, None, None, None, None, None, None, None],
-        ["YM34O", "YM34D", None, None, None, None, None, None, None, None],
-        ["IRCPO", "IRCPD", None, None, None, None, None, None, None, None],
-        ["YMCJO", "YMCJD", None, None, None, None, None, None, None, None],
-        ["IRCFO", "IRCFD", None, None, None, None, None, None, None, None],
-        ["IRCJO", "IRCJD", None, None, None, None, None, None, None, None],
-        ["PNDCO", "PNDCD", None, None, None, None, None, None, None, None],
-        ["CS38O", "CS38D", None, None, None, None, None, None, None, None],
-        ["CS44O", "CS44D", None, None, None, None, None, None, None, None],
-        ["CAC5O", "CAC5D", None, None, None, None, None, None, None, None],
-        ["LMS7O", "LMS7D", None, None, None, None, None, None, None, None],
-        ["LMS8O", "LMS8D", None, None, None, None, None, None, None, None],
-        ["CP34O", "CP34D", None, None, None, None, None, None, None, None],
-        ["PNWCO", "PNWCD", None, None, None, None, None, None, None, None],
-        ["GN43O", "GN43D", None, None, None, None, None, None, None, None],
-        ["RAC6O", "RAC6D", None, None, None, None, None, None, None, None],
-        ["PNXCO", "PNXCD", None, None, None, None, None, None, None, None],
-        ["OTS2O", "OTS2D", None, None, None, None, None, None, None, None],
-        ["TSC3O", "TSC3D", None, None, None, None, None, None, None, None],
-        ["VSCPO", "VSCPD", None, None, None, None, None, None, None, None],
-        ["YMCVO", "YMCVD", None, None, None, None, None, None, None, None],
-        ["HJCBO", "HJCBD", None, None, None, None, None, None, None, None],
-        ["IRCLO", "IRCLD", None, None, None, None, None, None, None, None],
-        ["LMS9O", "LMS9D", None, None, None, None, None, None, None, None],
-        ["YFCIO", "YFCID", None, None, None, None, None, None, None, None],
-        ["LIC6O", "LIC6D", None, None, None, None, None, None, None, None],
-        ["PN35O", "PN35D", None, None, None, None, None, None, None, None],
-        ["BYCHO", "BYCHD", None, None, None, None, None, None, None, None],
-        ["MGCMO", "MGCMD", None, None, None, None, None, None, None, None],
-        ["MGCNO", "MGCND", None, None, None, None, None, None, None, None],
-        ["YMCYO", "YMCYD", None, None, None, None, None, None, None, None],
-        ["YMCZO", "YMCZD", None, None, None, None, None, None, None, None],
-        ["HJCFO", "HJCFD", None, None, None, None, None, None, None, None],
-        ["HJCGO", "HJCGD", None, None, None, None, None, None, None, None],
-        ["GN47O", "GN47D", None, None, None, None, None, None, None, None],
-        ["DNC7O", "DNC7D", None, None, None, None, None, None, None, None],
-        ["IRCNO", "IRCND", None, None, None, None, None, None, None, None],
-        ["IRCOO", "IRCOD", None, None, None, None, None, None, None, None],
-        ["PQCRO", "PQCRD", None, None, None, None, None, None, None, None],
-        ["TTC9O", "TTC9D", None, None, None, None, None, None, None, None],
-        ["GYC4O", "GYC4D", None, None, None, None, None, None, None, None],
-        ["OTS3O", "OTS3D", None, None, None, None, None, None, None, None],
-        ["XMC1O", "XMC1D", None, None, None, None, None, None, None, None],
-        ["CIC7O", "CIC7D", None, None, None, None, None, None, None, None],
-        ["PN36O", "PN36D", None, None, None, None, None, None, None, None],
-        ["PN37O", "PN37D", None, None, None, None, None, None, None, None],
-        ["CS47O", "CS47D", None, None, None, None, None, None, None, None],
-        ["YFCKO", "YFCKD", None, None, None, None, None, None, None, None],
-        ["YFCLO", "YFCLD", None, None, None, None, None, None, None, None],
-        ["OZC3O", "OZC3D", None, None, None, None, None, None, None, None],
-        ["TLCOO", "TLCOD", None, None, None, None, None, None, None, None],
-        ["VSCTO", "VSCTD", None, None, None, None, None, None, None, None],
-        ["SIC1O", "SIC1D", None, None, None, None, None, None, None, None],
-        ["MGCOO", "MGCOD", None, None, None, None, None, None, None, None],
-        ["HJCHO", "HJCHD", None, None, None, None, None, None, None, None],
-        ["OT41O", "OT41D", None, None, None, None, None, None, None, None],
-        ["OT42O", "OT42D", None, None, None, None, None, None, None, None],
-        ["TTCAO", "TTCAD", None, None, None, None, None, None, None, None],
-        ["PLC1O", "PLC1D", None, None, None, None, None, None, None, None],
-        ["PLC2O", "PLC2D", None, None, None, None, None, None, None, None],
-        ["SNSDO", "SNSDD", None, None, None, None, None, None, None, None],
-        ["LDCGO", "LDCGD", None, None, None, None, None, None, None, None],
-        ["PN38O", "PN38D", None, None, None, None, None, None, None, None],
-        ["PQCSO", "PQCSD", None, None, None, None, None, None, None, None],
-        ["DEC2O", "DEC2D", None, None, None, None, None, None, None, None],
-        ["ZZC1O", "ZZC1D", None, None, None, None, None, None, None, None],
-        ["YM35O", "YM35D", None, None, None, None, None, None, None, None],
-        ["PUC2O", "PUC2D", None, None, None, None, None, None, None, None],
-        ["GYC5O", "GYC5D", None, None, None, None, None, None, None, None],
-        ["GN48O", "GN48D", None, None, None, None, None, None, None, None],
-        ["CP37O", "CP37D", None, None, None, None, None, None, None, None],
-        ["MCC1O", "MCC1D", None, None, None, None, None, None, None, None],
-        ["MCC2O", "MCC2D", None, None, None, None, None, None, None, None],
-        ["VBC1O", "VBC1D", None, None, None, None, None, None, None, None],
-        ["MSSGO", "MSSGD", None, None, None, None, None, None, None, None],
-        ["PLC3O", "PLC3D", None, None, None, None, None, None, None, None],
-        ["YM37O", "YM37D", None, None, None, None, None, None, None, None],
-        ["RCCRO", "RCCRD", None, None, None, None, None, None, None, None],
-        ["YFCMO", "YFCMD", None, None, None, None, None, None, None, None],
-        ["HJCIO", "HJCID", None, None, None, None, None, None, None, None],
-        ["TLCPO", "TLCPD", None, None, None, None, None, None, None, None],
-        ["CIC9O", "CIC9D", None, None, None, None, None, None, None, None],
-        ["PLC4O", "PLC4D", None, None, None, None, None, None, None, None],
-        ["BF35O", "BF35D", None, None, None, None, None, None, None, None],
-        ["ZPC2O", "ZPC2D", None, None, None, None, None, None, None, None],
-        ["VSCVO", "VSCVD", None, None, None, None, None, None, None, None],
-        ["OLC5O", "OLC5D", None, None, None, None, None, None, None, None],
-        ["CACBO", "CACBD", None, None, None, None, None, None, None, None],
-        ["TLCQO", "TLCQD", None, None, None, None, None, None, None, None],
-        ["EMC1O", "EMC1D", None, None, None, None, None, None, None, None],
-        ["CS48O", "CS48D", None, None, None, None, None, None, None, None],
-        ["HVS1O", "HVS1D", None, None, None, None, None, None, None, None],
-        ["BACGO", "BACGD", None, None, None, None, None, None, None, None],
-        ["PFC2O", "PFC2D", None, None, None, None, None, None, None, None],
-        ["YM38O", "YM38D", None, None, None, None, None, None, None, None],
-        ["YM39O", "YM39D", None, None, None, None, None, None, None, None],
-        ["LOC5O", "LOC5D", None, None, None, None, None, None, None, None],
-        ["HJCJO", "HJCJD", None, None, None, None, None, None, None, None],
-        ["MGCQO", "MGCQD", None, None, None, None, None, None, None, None],
-        ["RC1CO", "RC1CD", None, None, None, None, None, None, None, None],
-        ["DNC8O", "DNC8D", None, None, None, None, None, None, None, None],
-        ["BYCVO", "BYCVD", None, None, None, None, None, None, None, None],
-        ["BF37O", "BF37D", None, None, None, None, None, None, None, None],
-        ["YM40O", "YM40D", None, None, None, None, None, None, None, None],
-        ["NPCCO", "NPCCD", None, None, None, None, None, None, None, None],
-        ["PN41O", "PN41D", None, None, None, None, None, None, None, None],
-        ["CS49O", "CS49D", None, None, None, None, None, None, None, None],
-        ["T652O", "T652D", None, None, None, None, None, None, None, None],
-        ["AERBO", "AERBD", None, None, None, None, None, None, None, None],
-        ["NBS1O", "NBS1D", None, None, None, None, None, None, None, None],
-        ["VSCOO", "VSCOD", None, None, None, None, None, None, None, None],
-        ["VSCUO", "VSCUD", None, None, None, None, None, None, None, None],
-        ["ZPC3O", "ZPC3D", None, None, None, None, None, None, None, None],
-        ["SBC1O", "SBC1D", None, None, None, None, None, None, None, None],
-        ["RC2CO", "RC2CD", None, None, None, None, None, None, None, None],
-        ["JNC6O", "JNC6D", None, None, None, None, None, None, None, None],
-        ["YM41O", "YM41D", None, None, None, None, None, None, None, None],
-        ["PN42O", "PN42D", None, None, None, None, None, None, None, None],
-        ["OTS5O", "OTS5D", None, None, None, None, None, None, None, None],
-        ["VSCWO", "VSCWD", None, None, None, None, None, None, None, None],
-        ["TTCDO", "TTCDD", None, None, None, None, None, None, None, None],
-        ["MIC3O", "MIC3D", None, None, None, None, None, None, None, None],
-        ["AFCIO", "AFCID", None, None, None, None, None, None, None, None],
-        ["BGC4O", "BGC4D", None, None, None, None, None, None, None, None],
-        ["PLC5O", "PLC5D", None, None, None, None, None, None, None, None],
-        ["MGCRO", "MGCRD", None, None, None, None, None, None, None, None],
-        ["TSC4O", "TSC4D", None, None, None, None, None, None, None, None],
-        ["GN49O", "GN49D", None, None, None, None, None, None, None, None],
-        ["CICAO", "CICAD", None, None, None, None, None, None, None, None],
-        ["YM42O", "YM42D", None, None, None, None, None, None, None, None],
-        ["BF39O", "BF39D", None, None, None, None, None, None, None, None],
-        ["BPCUO", "BPCUD", None, None, None, None, None, None, None, None],
-        ["CS50O", "CS50D", None, None, None, None, None, None, None, None],
-        ["OLC6O", "OLC6D", None, None, None, None, None, None, None, None],
-        ["YFCOO", "YFCOD", None, None, None, None, None, None, None, None],
-        ["PN43O", "PN43D", None, None, None, None, None, None, None, None],
-        ["CS51O", "CS51D", None, None, None, None, None, None, None, None],
-        ["TLCTO", "TLCTD", None, None, None, None, None, None, None, None],
-        ["BACHO", "BACHD", None, None, None, None, None, None, None, None],
-        ["LOC6O", "LOC6D", None, None, None, None, None, None, None, None],
-        ["FO4AO", "FO4AD", None, None, None, None, None, None, None, None],
-        ["SNEBO", "SNEBD", None, None, None, None, None, None, None, None],
-        ["MIC4O", "MIC4D", None, None, None, None, None, None, None, None],
-        ["CACDO", "CACDD", None, None, None, None, None, None, None, None],
-        ["RUCEO", "RUCED", None, None, None, None, None, None, None, None],
-        ["AFCJO", "AFCJD", None, None, None, None, None, None, None, None],
-        ["AFCKO", "AFCKD", None, None, None, None, None, None, None, None],
-        ["AFCLO", "AFCLD", None, None, None, None, None, None, None, None],
-        ["SXC2O", "SXC2D", None, None, None, None, None, None, None, None],
-        ["MJC1O", "MJC1D", None, None, None, None, None, None, None, None],
-        ["OLC7O", "OLC7D", None, None, None, None, None, None, None, None],
-        ["HBCFO", "HBCFD", None, None, None, None, None, None, None, None],
-        ["BA37D", "BA7DD", None, None, None, None, None, None, None, None],
-        ["NDT25", "NDT5D", None, None, None, None, None, None, None, None],
-        ["CO26", "CO26D", None, None, None, None, None, None, None, None],
-        ["CO35", "CO35D", None, None, None, None, None, None, None, None],
-        ["PMM29", "PM29D", None, None, None, None, None, None, None, None],
-        ["SA24D", "S24DD", None, None, None, None, None, None, None, None],
-        ["AL30", "AL30D", None, None, None, None, None, None, None, None],
-        ["GD30", "GD30D", None, None, None, None, None, None, None, None],
-        ["AL35", "AL35D", None, None, None, None, None, None, None, None],
-        ["GD35", "GD35D", None, None, None, None, None, None, None, None],
-        ["BPY26", "BPY6D", None, None, None, None, None, None, None, None],
-        ["BPOD7", "BPD7D", None, None, None, None, None, None, None, None],
+        create_instrument("YMCIO", "YMCID"),
+        create_instrument("YMCXO", "YMCXD"),
+        create_instrument("TLC1O", "TLC1D"),
+        create_instrument("TLCMO", "TLCMD"),
+        create_instrument("MTCGO", "MTCGD"),
+        create_instrument("ARC1O", "ARC1D"),
+        create_instrument("BOL1O", "BOL1D"),
+        create_instrument("DNC3O", "DNC3D"),
+        create_instrument("DNC5O", "DNC5D"),
+        create_instrument("MSSEO", "MSSED"),
+        create_instrument("LOC3O", "LOC3D"),
+        create_instrument("VSCRO", "VSCRD"),
+        create_instrument("SNABO", "SNABD"),
+        create_instrument("RUCDO", "RUCDD"),
+        create_instrument("YFCJO", "YFCJD"),
+        create_instrument("YM34O", "YM34D"),
+        create_instrument("IRCPO", "IRCPD"),
+        create_instrument("YMCJO", "YMCJD"),
+        create_instrument("IRCFO", "IRCFD"),
+        create_instrument("IRCJO", "IRCJD"),
+        create_instrument("PNDCO", "PNDCD"),
+        create_instrument("CS38O", "CS38D"),
+        create_instrument("CS44O", "CS44D"),
+        create_instrument("CAC5O", "CAC5D"),
+        create_instrument("LMS7O", "LMS7D"),
+        create_instrument("LMS8O", "LMS8D"),
+        create_instrument("CP34O", "CP34D"),
+        create_instrument("PNWCO", "PNWCD"),
+        create_instrument("GN43O", "GN43D"),
+        create_instrument("RAC6O", "RAC6D"),
+        create_instrument("PNXCO", "PNXCD"),
+        create_instrument("OTS2O", "OTS2D"),
+        create_instrument("TSC3O", "TSC3D"),
+        create_instrument("VSCPO", "VSCPD"),
+        create_instrument("YMCVO", "YMCVD"),
+        create_instrument("HJCBO", "HJCBD"),
+        create_instrument("IRCLO", "IRCLD"),
+        create_instrument("LMS9O", "LMS9D"),
+        create_instrument("YFCIO", "YFCID"),
+        create_instrument("LIC6O", "LIC6D"),
+        create_instrument("PN35O", "PN35D"),
+        create_instrument("BYCHO", "BYCHD"),
+        create_instrument("MGCMO", "MGCMD"),
+        create_instrument("MGCNO", "MGCND"),
+        create_instrument("YMCYO", "YMCYD"),
+        create_instrument("YMCZO", "YMCZD"),
+        create_instrument("HJCFO", "HJCFD"),
+        create_instrument("HJCGO", "HJCGD"),
+        create_instrument("GN47O", "GN47D"),
+        create_instrument("DNC7O", "DNC7D"),
+        create_instrument("IRCNO", "IRCND"),
+        create_instrument("IRCOO", "IRCOD"),
+        create_instrument("PQCRO", "PQCRD"),
+        create_instrument("TTC9O", "TTC9D"),
+        create_instrument("GYC4O", "GYC4D"),
+        create_instrument("OTS3O", "OTS3D"),
+        create_instrument("XMC1O", "XMC1D"),
+        create_instrument("CIC7O", "CIC7D"),
+        create_instrument("PN36O", "PN36D"),
+        create_instrument("PN37O", "PN37D"),
+        create_instrument("CS47O", "CS47D"),
+        create_instrument("YFCKO", "YFCKD"),
+        create_instrument("YFCLO", "YFCLD"),
+        create_instrument("OZC3O", "OZC3D"),
+        create_instrument("TLCOO", "TLCOD"),
+        create_instrument("VSCTO", "VSCTD"),
+        create_instrument("SIC1O", "SIC1D"),
+        create_instrument("MGCOO", "MGCOD"),
+        create_instrument("HJCHO", "HJCHD"),
+        create_instrument("OT41O", "OT41D"),
+        create_instrument("OT42O", "OT42D"),
+        create_instrument("TTCAO", "TTCAD"),
+        create_instrument("PLC1O", "PLC1D"),
+        create_instrument("PLC2O", "PLC2D"),
+        create_instrument("SNSDO", "SNSDD"),
+        create_instrument("LDCGO", "LDCGD"),
+        create_instrument("PN38O", "PN38D"),
+        create_instrument("PQCSO", "PQCSD"),
+        create_instrument("DEC2O", "DEC2D"),
+        create_instrument("ZZC1O", "ZZC1D"),
+        create_instrument("YM35O", "YM35D"),
+        create_instrument("PUC2O", "PUC2D"),
+        create_instrument("GYC5O", "GYC5D"),
+        create_instrument("GN48O", "GN48D"),
+        create_instrument("CP37O", "CP37D"),
+        create_instrument("MCC1O", "MCC1D"),
+        create_instrument("MCC2O", "MCC2D"),
+        create_instrument("VBC1O", "VBC1D"),
+        create_instrument("MSSGO", "MSSGD"),
+        create_instrument("PLC3O", "PLC3D"),
+        create_instrument("YM37O", "YM37D"),
+        create_instrument("RCCRO", "RCCRD"),
+        create_instrument("YFCMO", "YFCMD"),
+        create_instrument("HJCIO", "HJCID"),
+        create_instrument("TLCPO", "TLCPD"),
+        create_instrument("CIC9O", "CIC9D"),
+        create_instrument("PLC4O", "PLC4D"),
+        create_instrument("BF35O", "BF35D"),
+        create_instrument("ZPC2O", "ZPC2D"),
+        create_instrument("VSCVO", "VSCVD"),
+        create_instrument("OLC5O", "OLC5D"),
+        create_instrument("CACBO", "CACBD"),
+        create_instrument("TLCQO", "TLCQD"),
+        create_instrument("EMC1O", "EMC1D"),
+        create_instrument("CS48O", "CS48D"),
+        create_instrument("HVS1O", "HVS1D"),
+        create_instrument("BACGO", "BACGD"),
+        create_instrument("PFC2O", "PFC2D"),
+        create_instrument("YM38O", "YM38D"),
+        create_instrument("YM39O", "YM39D"),
+        create_instrument("LOC5O", "LOC5D"),
+        create_instrument("HJCJO", "HJCJD"),
+        create_instrument("MGCQO", "MGCQD"),
+        create_instrument("RC1CO", "RC1CD"),
+        create_instrument("DNC8O", "DNC8D"),
+        create_instrument("BYCVO", "BYCVD"),
+        create_instrument("BF37O", "BF37D"),
+        create_instrument("YM40O", "YM40D"),
+        create_instrument("NPCCO", "NPCCD"),
+        create_instrument("PN41O", "PN41D"),
+        create_instrument("CS49O", "CS49D"),
+        create_instrument("T652O", "T652D"),
+        create_instrument("AERBO", "AERBD"),
+        create_instrument("NBS1O", "NBS1D"),
+        create_instrument("VSCOO", "VSCOD"),
+        create_instrument("VSCUO", "VSCUD"),
+        create_instrument("ZPC3O", "ZPC3D"),
+        create_instrument("SBC1O", "SBC1D"),
+        create_instrument("RC2CO", "RC2CD"),
+        create_instrument("JNC6O", "JNC6D"),
+        create_instrument("YM41O", "YM41D"),
+        create_instrument("PN42O", "PN42D"),
+        create_instrument("OTS5O", "OTS5D"),
+        create_instrument("VSCWO", "VSCWD"),
+        create_instrument("TTCDO", "TTCDD"),
+        create_instrument("MIC3O", "MIC3D"),
+        create_instrument("AFCIO", "AFCID"),
+        create_instrument("BGC4O", "BGC4D"),
+        create_instrument("PLC5O", "PLC5D"),
+        create_instrument("MGCRO", "MGCRD"),
+        create_instrument("TSC4O", "TSC4D"),
+        create_instrument("GN49O", "GN49D"),
+        create_instrument("CICAO", "CICAD"),
+        create_instrument("YM42O", "YM42D"),
+        create_instrument("BF39O", "BF39D"),
+        create_instrument("BPCUO", "BPCUD"),
+        create_instrument("CS50O", "CS50D"),
+        create_instrument("OLC6O", "OLC6D"),
+        create_instrument("YFCOO", "YFCOD"),
+        create_instrument("PN43O", "PN43D"),
+        create_instrument("CS51O", "CS51D"),
+        create_instrument("TLCTO", "TLCTD"),
+        create_instrument("BACHO", "BACHD"),
+        create_instrument("LOC6O", "LOC6D"),
+        create_instrument("FO4AO", "FO4AD"),
+        create_instrument("SNEBO", "SNEBD"),
+        create_instrument("MIC4O", "MIC4D"),
+        create_instrument("CACDO", "CACDD"),
+        create_instrument("RUCEO", "RUCED"),
+        create_instrument("AFCJO", "AFCJD"),
+        create_instrument("AFCKO", "AFCKD"),
+        create_instrument("AFCLO", "AFCLD"),
+        create_instrument("SXC2O", "SXC2D"),
+        create_instrument("MJC1O", "MJC1D"),
+        create_instrument("OLC7O", "OLC7D"),
+        create_instrument("HBCFO", "HBCFD"),
+        create_instrument("BA37D", "BA7DD"),
+        create_instrument("NDT25", "NDT5D"),
+        create_instrument("CO26", "CO26D"),
+        create_instrument("CO35", "CO35D"),
+        create_instrument("PMM29", "PM29D"),
+        create_instrument("SA24D", "S24DD"),
+        create_instrument("AL30", "AL30D"),
+        create_instrument("GD30", "GD30D"),
+        create_instrument("AL35", "AL35D"),
+        create_instrument("GD35", "GD35D"),
+        create_instrument("BPY26", "BPY6D"),
+        create_instrument("BPOD7", "BPD7D"),
+        create_instrument("AO27", "AO27D"),
     ]
-    websocket_url = "wss://matriz.cocos.xoms.com.ar/ws?session_id=gqKxOszDYQQ7rKXTo3ypHhA%2FnaS%2BvkIeZGVFew7mxGElbIUxZv1DT4dpZo%2Fm8eny&conn_id=Vj2HkM3nQqa9VqD5N2NzJF2sdbX5UZ7%2B1OpC6CxnoNi4c2TuzJ4Tdg7GX%2FWDF0%2Bp"
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+    CONFIG_FILE_PATH = os.path.join(PROJECT_ROOT, "config.ini")
+    if not os.path.exists(CONFIG_FILE_PATH):
+        raise FileNotFoundError(
+            f"Credentials file not found at {CONFIG_FILE_PATH}. Please create it."
+        )
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE_PATH)
+
+    session_id = config["credentials"]["matriz_session_id"]
+    conn_id = config["credentials"]["matriz_conn_id"]
+
+    websocket_url = (
+        f"wss://matriz.cocos.xoms.com.ar/ws?session_id={session_id}&conn_id={conn_id}"
+    )
 
     dataframehandler = DataFrameHandler(instrumentos)
     websocketclient = WebSocketClient(websocket_url, dataframehandler, instrumentos)
