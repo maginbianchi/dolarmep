@@ -6,3 +6,4 @@
 config.ini
 token.csv
 *.log
+.venv

@@ -11,23 +11,6 @@ from dash import Dash, dash_table, html, Input, Output, callback
 from dash.dash_table import FormatTemplate
 
 
-ymcho = {
-    "tickerPesos": "YMCHO",
-    "tickerDolar": "YMCHD",
-    "dates": [
-        date(2024, 2, 12),
-        date(2024, 5, 12),
-        date(2024, 8, 12),
-        date(2024, 11, 12),
-        date(2025, 2, 12),
-        date(2025, 5, 12),
-        date(2025, 8, 12),
-        date(2025, 11, 12),
-        date(2026, 2, 12),
-    ],
-    "amounts": [9.07, 9.07, 8.90, 8.73, 8.56, 8.38, 8.21, 8.04, 7.86],
-}
-
 ymcio = {
     "tickerPesos": "YMCIO",
     "tickerDolar": "YMCID",
@@ -170,20 +153,6 @@ gncxo = {
     ],
 }
 
-dnc1o = {
-    "tickerPesos": "DNC1O",
-    "tickerDolar": "DNC1D",
-    "dates": [
-        date(2024, 5, 12),
-        date(2024, 11, 12),
-        date(2025, 5, 12),
-    ],
-    "amounts": [
-        4.88,
-        4.88,
-        104.88,
-    ],
-}
 
 pndco = {
     "tickerPesos": "PNDCO",
@@ -206,39 +175,6 @@ pndco = {
     ],
 }
 
-tlc5o = {
-    "tickerPesos": "TLC5O",
-    "tickerDolar": "TLC5D",
-    "dates": [
-        date(2024, 8, 6),
-        date(2025, 2, 6),
-        date(2025, 8, 6),
-    ],
-    "amounts": [
-        35.85,
-        1.45,
-        35.45,
-    ],
-}
-
-cs38o = {
-    "tickerPesos": "CS38O",
-    "tickerDolar": "CS38D",
-    "dates": [
-        date(2024, 7, 3),
-        date(2025, 1, 3),
-        date(2025, 7, 3),
-        date(2026, 1, 3),
-        date(2026, 3, 3),
-    ],
-    "amounts": [
-        4.00,
-        4.00,
-        4.00,
-        4.00,
-        101.33,
-    ],
-}
 
 ircfo = {
     "tickerPesos": "IRCFO",
@@ -265,56 +201,6 @@ ircfo = {
     ],
 }
 
-mgc9o = {
-    "tickerPesos": "MGC9O",
-    "tickerDolar": "MGC9D",
-    "dates": [
-        date(2024, 6, 8),
-        date(2024, 12, 8),
-        date(2025, 6, 8),
-        date(2025, 12, 8),
-        date(2026, 6, 8),
-        date(2026, 12, 8),
-    ],
-    "amounts": [
-        4.75,
-        37.75,
-        3.18,
-        36.18,
-        1.62,
-        35.62,
-    ],
-}
-
-cs37o = {
-    "tickerPesos": "CS37O",
-    "tickerDolar": "CS37D",
-    "dates": [
-        date(2024, 6, 15),
-        date(2024, 12, 15),
-        date(2025, 3, 15),
-    ],
-    "amounts": [
-        2.75,
-        2.75,
-        101.38,
-    ],
-}
-
-pnmco = {
-    "tickerPesos": "PNMCO",
-    "tickerDolar": "PNMCD",
-    "dates": [
-        date(2024, 7, 21),
-        date(2025, 1, 21),
-        date(2025, 7, 21),
-    ],
-    "amounts": [
-        3.63,
-        3.63,
-        103.63,
-    ],
-}
 
 arc1o = {
     "tickerPesos": "ARC1O",
@@ -406,166 +292,6 @@ rccjo = {
     ],
 }
 
-ircho = {
-    "tickerPesos": "IRCHO",
-    "tickerDolar": "IRCHD",
-    "dates": [
-        date(2024, 7, 31),
-        date(2025, 1, 31),
-        date(2025, 7, 31),
-    ],
-    "amounts": [3.50, 3.50, 103.40],
-}
-
-
-mrcao = {
-    "tickerPesos": "MRCAO",
-    "tickerDolar": "MRCAD",
-    "dates": [
-        date(2024, 6, 1),
-        date(2024, 12, 1),
-        date(2025, 6, 1),
-        date(2025, 12, 1),
-        date(2026, 6, 1),
-        date(2026, 12, 1),
-        date(2027, 6, 1),
-        date(2027, 12, 1),
-    ],
-    "amounts": [
-        14.15,
-        13.65,
-        13.16,
-        12.67,
-        12.17,
-        11.68,
-        11.19,
-        14.69,
-    ],
-}
-
-mrclo = {
-    "tickerPesos": "MRCLO",
-    "tickerDolar": "MRCLD",
-    "dates": [
-        date(2024, 7, 27),
-        date(2025, 1, 27),
-        date(2025, 7, 27),
-    ],
-    "amounts": [4.75, 4.75, 104.75],
-}
-
-mgcho = {
-    "tickerPesos": "MGCHO",
-    "tickerDolar": "MGCHD",
-    "dates": [
-        date(2024, 11, 4),
-        date(2025, 5, 4),
-        date(2025, 11, 4),
-    ],
-    "amounts": [2.50, 2.50, 102.50],
-}
-
-rccmo = {
-    "tickerPesos": "RCCMO",
-    "tickerDolar": "RCCMD",
-    "dates": [
-        date(2024, 5, 22),
-        date(2024, 11, 22),
-        date(2025, 5, 22),
-        date(2025, 11, 22),
-    ],
-    "amounts": [1.75, 1.75, 1.75, 101.75],
-}
-
-vsclo = {
-    "tickerPesos": "VSCLO",
-    "tickerDolar": "VSCLD",
-    "dates": [
-        date(2024, 6, 5),
-        date(2024, 9, 5),
-        date(2024, 12, 5),
-        date(2025, 3, 5),
-        date(2025, 7, 20),
-    ],
-    "amounts": [
-        1.13,
-        1.13,
-        1.13,
-        1.13,
-        101.69,
-    ],
-}
-
-ircio = {
-    "tickerPesos": "IRCIO",
-    "tickerDolar": "IRCID",
-    "dates": [
-        date(2024, 6, 7),
-        date(2024, 12, 7),
-        date(2025, 6, 7),
-        date(2025, 12, 7),
-    ],
-    "amounts": [1.25, 2.50, 2.50, 102.50],
-}
-
-ymcqo = {
-    "tickerPesos": "YMCQO",
-    "tickerDolar": "YMCQD",
-    "dates": [
-        date(2024, 6, 12),
-        date(2024, 12, 12),
-        date(2025, 6, 12),
-        date(2025, 12, 12),
-        date(2026, 2, 12),
-    ],
-    "amounts": [2.50, 2.50, 2.50, 2.50, 100.83],
-}
-
-cp32o = {
-    "tickerPesos": "CP32O",
-    "tickerDolar": "CP32D",
-    "dates": [
-        date(2024, 6, 9),
-        date(2024, 9, 9),
-        date(2024, 12, 9),
-        date(2025, 3, 9),
-        date(2025, 6, 9),
-        date(2025, 9, 9),
-        date(2025, 12, 9),
-    ],
-    "amounts": [
-        1.50,
-        1.50,
-        1.50,
-        1.50,
-        1.50,
-        1.50,
-        101.50,
-    ],
-}
-
-loc2o = {
-    "tickerPesos": "LOC2O",
-    "tickerDolar": "LOC2D",
-    "dates": [
-        date(2024, 6, 21),
-        date(2024, 12, 21),
-        date(2025, 6, 21),
-        date(2025, 12, 21),
-    ],
-    "amounts": [3.25, 3.25, 3.25, 103.25],
-}
-
-aec1o = {
-    "tickerPesos": "AEC1O",
-    "tickerDolar": "AEC1D",
-    "dates": [
-        date(2024, 7, 14),
-        date(2025, 1, 14),
-        date(2025, 7, 14),
-    ],
-    "amounts": [4.00, 4.00, 104.00],
-}
 
 msseo = {
     "tickerPesos": "MSSEO",
@@ -578,41 +304,6 @@ msseo = {
     "amounts": [6.50, 6.50, 106.50],
 }
 
-gn40o = {
-    "tickerPesos": "GN40O",
-    "tickerDolar": "GN40D",
-    "dates": [
-        date(2024, 7, 14),
-        date(2024, 10, 14),
-        date(2024, 1, 14),
-        date(2025, 4, 14),
-        date(2025, 7, 14),
-    ],
-    "amounts": [
-        1.38,
-        1.38,
-        1.38,
-        1.38,
-        101.38,
-    ],
-}
-
-mrcoo = {
-    "tickerPesos": "MRCOO",
-    "tickerDolar": "MROCD",
-    "dates": [
-        date(2024, 7, 21),
-        date(2025, 1, 21),
-        date(2025, 7, 21),
-        date(2026, 1, 21),
-    ],
-    "amounts": [
-        4.75,
-        4.75,
-        4.75,
-        104.75,
-    ],
-}
 
 cac5o = {
     "tickerPesos": "CAC5O",
@@ -658,16 +349,6 @@ bol1o = {
     ],
 }
 
-mgcjo = {
-    "tickerPesos": "MGCJO",
-    "tickerDolar": "MGCJD",
-    "dates": [
-        date(2024, 9, 8),
-        date(2025, 3, 8),
-        date(2025, 9, 8),
-    ],
-    "amounts": [2.50, 2.50, 102.50],
-}
 
 loc3o = {
     "tickerPesos": "LOC3O",
@@ -681,52 +362,6 @@ loc3o = {
     "amounts": [3.75, 3.75, 3.75, 103.75],
 }
 
-npcao = {
-    "tickerPesos": "NPCAO",
-    "tickerDolar": "NPCAD",
-    "dates": [
-        date(2024, 9, 14),
-        date(2025, 3, 14),
-        date(2025, 9, 14),
-        date(2026, 3, 14),
-    ],
-    "amounts": [3.50, 3.50, 3.50, 103.50],
-}
-
-lecbo = {
-    "tickerPesos": "LECBO",
-    "tickerDolar": "LECBD",
-    "dates": [
-        date(2024, 9, 21),
-        date(2025, 3, 21),
-        date(2025, 9, 21),
-        date(2026, 3, 21),
-    ],
-    "amounts": [4.75, 4.75, 4.75, 104.75],
-}
-
-npcbo = {
-    "tickerPesos": "NPCBO",
-    "tickerDolar": "NPCBD",
-    "dates": [
-        date(2024, 10, 17),
-        date(2025, 4, 17),
-        date(2025, 10, 17),
-    ],
-    "amounts": [5, 5, 105],
-}
-
-mrcqo = {
-    "tickerPesos": "MRCQO",
-    "tickerDolar": "MRCQD",
-    "dates": [
-        date(2024, 10, 18),
-        date(2025, 4, 18),
-        date(2025, 10, 18),
-        date(2026, 4, 18),
-    ],
-    "amounts": [4.75, 4.75, 4.75, 104.75],
-}
 
 lms7o = {
     "tickerPesos": "LMS7O",
@@ -808,68 +443,6 @@ lms8o = {
     ],
 }
 
-pncuo = {
-    "tickerPesos": "PNCUO",
-    "tickerDolar": "PNCUD",
-    "dates": [
-        date(2024, 10, 17),
-        date(2025, 4, 17),
-        date(2025, 10, 18),
-    ],
-    "amounts": [3.25, 3.25, 103.27],
-}
-
-
-loc4o = {
-    "tickerPesos": "LOC4O",
-    "tickerDolar": "LOC4D",
-    "dates": [
-        date(2024, 11, 2),
-        date(2025, 5, 2),
-        date(2025, 11, 2),
-        date(2026, 5, 2),
-    ],
-    "amounts": [3.50, 3.50, 3.50, 103.50],
-}
-
-
-pnvco = {
-    "tickerPesos": "PNVCO",
-    "tickerDolar": "PNVCD",
-    "dates": [
-        date(2024, 5, 10),
-        date(2024, 11, 10),
-        date(2025, 5, 10),
-        date(2025, 11, 10),
-        date(2026, 2, 10),
-    ],
-    "amounts": [
-        2.50,
-        2.50,
-        2.50,
-        2.50,
-        101.25,
-    ],
-}
-
-vscno = {
-    "tickerPesos": "VSCNO",
-    "tickerDolar": "VSCND",
-    "dates": [
-        date(2024, 6, 5),
-        date(2024, 12, 5),
-        date(2025, 6, 5),
-        date(2025, 12, 5),
-        date(2026, 6, 5),
-    ],
-    "amounts": [
-        2.50,
-        2.50,
-        2.50,
-        2.50,
-        102.5,
-    ],
-}
 
 cs44o = {
     "tickerPesos": "CS44O",
@@ -929,30 +502,6 @@ ymcuo = {
     ],
 }
 
-leceo = {
-    "tickerPesos": "LECEO",
-    "tickerDolar": "LECED",
-    "dates": [
-        date(2024, 7, 31),
-        date(2025, 1, 31),
-        date(2025, 7, 31),
-        date(2026, 1, 31),
-        date(2026, 7, 31),
-    ],
-    "amounts": [4.50, 4.50, 4.50, 4.50, 104.50],
-}
-
-cp34o = {
-    "tickerPesos": "CP34O",
-    "tickerDolar": "CP34D",
-    "dates": [
-        date(2024, 8, 23),
-        date(2025, 2, 23),
-        date(2025, 8, 23),
-        date(2026, 2, 23),
-    ],
-    "amounts": [3.50, 3.50, 3.50, 103.50],
-}
 
 ircjo = {
     "tickerPesos": "IRCJO",
@@ -975,68 +524,6 @@ ircjo = {
     ],
 }
 
-pecao = {
-    "tickerPesos": "PECAO",
-    "tickerDolar": "PECAD",
-    "dates": [
-        date(2024, 8, 29),
-        date(2025, 3, 1),
-        date(2025, 8, 29),
-        date(2026, 3, 1),
-        date(2026, 8, 29),
-        date(2027, 3, 1),
-    ],
-    "amounts": [
-        4.23,
-        4.30,
-        4.20,
-        4.30,
-        4.20,
-        104.30,
-    ],
-}
-
-pecbo = {
-    "tickerPesos": "PECBO",
-    "tickerDolar": "PECBD",
-    "dates": [
-        date(2024, 8, 29),
-        date(2025, 3, 1),
-        date(2025, 8, 29),
-        date(2026, 3, 1),
-        date(2026, 8, 29),
-        date(2027, 3, 1),
-        date(2027, 8, 29),
-        date(2028, 2, 29),
-    ],
-    "amounts": [
-        4.72,
-        4.80,
-        4.70,
-        4.80,
-        4.70,
-        38.13,
-        36.46,
-        34.92,
-    ],
-}
-
-pnwco = {
-    "tickerPesos": "PNWCO",
-    "tickerDolar": "PNWCD",
-    "dates": [
-        date(2024, 8, 28),
-        date(2025, 2, 28),
-        date(2025, 8, 28),
-        date(2026, 3, 1),
-    ],
-    "amounts": [
-        2.82,
-        2.85,
-        2.82,
-        102.91,
-    ],
-}
 
 dnc3o = {
     "tickerPesos": "DNC3O",
@@ -1090,86 +577,6 @@ gn43o = {
     ],
 }
 
-mrcuo = {
-    "tickerPesos": "MRCUO",
-    "tickerDolar": "MRCUD",
-    "dates": [
-        date(2024, 9, 8),
-        date(2025, 3, 8),
-        date(2025, 9, 8),
-        date(2026, 3, 8),
-    ],
-    "amounts": [4.75, 4.75, 4.75, 104.75],
-}
-
-rucao = {
-    "tickerPesos": "RUCAO",
-    "tickerDolar": "RUCAD",
-    "dates": [
-        date(2024, 9, 12),
-        date(2025, 3, 12),
-        date(2025, 9, 12),
-        date(2026, 3, 12),
-    ],
-    "amounts": [4.13, 4.13, 4.13, 104.13],
-}
-
-mgclo = {
-    "tickerPesos": "MGCLO",
-    "tickerDolar": "MGCLD",
-    "dates": [
-        date(2024, 9, 26),
-        date(2025, 3, 26),
-        date(2025, 9, 26),
-        date(2026, 3, 26),
-    ],
-    "amounts": [3.00, 3.00, 3.00, 103.00],
-}
-
-rac5o = {
-    "tickerPesos": "RAC5O",
-    "tickerDolar": "RAC5D",
-    "dates": [
-        date(2024, 10, 24),
-        date(2025, 4, 24),
-        date(2025, 10, 24),
-        date(2026, 4, 24),
-        date(2026, 10, 24),
-        date(2027, 4, 24),
-        date(2027, 10, 24),
-        date(2028, 4, 24),
-        date(2028, 10, 24),
-        date(2029, 4, 24),
-        date(2029, 10, 24),
-        date(2030, 4, 24),
-    ],
-    "amounts": [
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        4.13,
-        104.13,
-    ],
-}
-
-rac6o = {
-    "tickerPesos": "RAC6O",
-    "tickerDolar": "RAC6D",
-    "dates": [
-        date(2024, 10, 11),
-        date(2025, 4, 11),
-        date(2025, 10, 11),
-        date(2026, 4, 11),
-    ],
-    "amounts": [2.99, 35.99, 35.00, 35.02],
-}
 
 ttc7o = {
     "tickerPesos": "TTC7O",
@@ -1183,18 +590,6 @@ ttc7o = {
     "amounts": [2.99, 2.99, 2.99, 102.99],
 }
 
-cs45o = {
-    "tickerPesos": "CS45O",
-    "tickerDolar": "CS45D",
-    "dates": [
-        date(2024, 10, 22),
-        date(2025, 4, 22),
-        date(2025, 10, 22),
-        date(2026, 4, 22),
-        date(2026, 8, 22),
-    ],
-    "amounts": [3.00, 3.00, 3.00, 3.00, 102.00],
-}
 
 ots2o = {
     "tickerPesos": "OTS2O",
@@ -1322,119 +717,6 @@ vscpo = {
     ],
 }
 
-crcjo = {
-    "tickerPesos": "CRCJO",
-    "tickerDolar": "CRCJD",
-    "dates": [
-        date(2024, 8, 16),
-        date(2024, 11, 16),
-        date(2025, 2, 16),
-        date(2025, 5, 16),
-        date(2025, 8, 16),
-        date(2025, 11, 16),
-        date(2026, 2, 16),
-        date(2026, 5, 16),
-        date(2026, 8, 16),
-        date(2026, 11, 16),
-        date(2027, 2, 16),
-        date(2027, 5, 16),
-        date(2027, 8, 16),
-        date(2027, 11, 16),
-        date(2028, 2, 16),
-        date(2028, 5, 16),
-    ],
-    "amounts": [
-        8.56,
-        8.42,
-        8.27,
-        8.13,
-        7.98,
-        7.84,
-        7.70,
-        7.55,
-        7.41,
-        7.26,
-        7.12,
-        6.97,
-        6.83,
-        6.68,
-        6.54,
-        6.39,
-    ],
-}
-
-mrcxo = {
-    "tickerPesos": "MRCXO",
-    "tickerDolar": "MRCXD",
-    "dates": [
-        date(2024, 8, 28),
-        date(2024, 11, 28),
-        date(2025, 2, 28),
-        date(2025, 5, 28),
-        date(2025, 8, 28),
-        date(2025, 11, 28),
-        date(2026, 2, 28),
-        date(2026, 5, 28),
-        date(2026, 8, 28),
-        date(2026, 11, 28),
-        date(2027, 2, 28),
-        date(2027, 5, 28),
-    ],
-    "amounts": [
-        3.13,
-        3.13,
-        3.13,
-        12.06,
-        12.13,
-        11.82,
-        12.51,
-        12.12,
-        11.99,
-        15.61,
-        15.09,
-        15.55,
-    ],
-}
-
-ymcvo = {
-    "tickerPesos": "YMCVO",
-    "tickerDolar": "YMCVD",
-    "dates": [
-        date(2024, 11, 27),
-        date(2025, 2, 27),
-        date(2025, 5, 27),
-        date(2025, 8, 27),
-        date(2025, 11, 27),
-        date(2026, 2, 27),
-        date(2026, 5, 27),
-    ],
-    "amounts": [
-        3.00,
-        1.50,
-        1.50,
-        1.50,
-        1.50,
-        1.50,
-        101.50,
-    ],
-}
-
-mrcyo = {
-    "tickerPesos": "MRCYO",
-    "tickerDolar": "MRCYD",
-    "dates": [
-        date(2024, 11, 30),
-        date(2025, 5, 30),
-        date(2025, 11, 30),
-        date(2026, 5, 30),
-    ],
-    "amounts": [
-        4.75,
-        4.75,
-        4.75,
-        104.75,
-    ],
-}
 
 hjcbo = {
     "tickerPesos": "HJCBO",
@@ -1571,49 +853,6 @@ tlcmo = {
     ],
 }
 
-mssfo = {
-    "tickerPesos": "MSSFO",
-    "tickerDolar": "MSSFD",
-    "dates": [
-        date(2025, 1, 23),
-        date(2025, 7, 23),
-        date(2026, 1, 23),
-        date(2026, 7, 23),
-        date(2027, 1, 23),
-        date(2027, 7, 23),
-    ],
-    "amounts": [
-        3.75,
-        3.75,
-        3.75,
-        3.75,
-        3.75,
-        103.75,
-    ],
-}
-
-snabo = {
-    "tickerPesos": "SNABO",
-    "tickerDolar": "SNABD",
-    "dates": [
-        date(2025, 1, 29),
-        date(2025, 4, 29),
-        date(2025, 7, 29),
-        date(2025, 10, 29),
-        date(2026, 1, 29),
-        date(2026, 4, 29),
-        date(2026, 7, 29),
-    ],
-    "amounts": [
-        4.50,
-        2.25,
-        2.25,
-        2.25,
-        2.50,
-        2.50,
-        102.50,
-    ],
-}
 
 dnc5o = {
     "tickerPesos": "DNC5O",
@@ -1637,69 +876,6 @@ dnc5o = {
         4.75,
         4.75,
         104.75,
-    ],
-}
-
-crclo = {
-    "tickerPesos": "CRCLO",
-    "tickerDolar": "CRCLD",
-    "dates": [
-        date(2024, 11, 8),
-        date(2025, 2, 8),
-        date(2025, 5, 8),
-        date(2025, 8, 8),
-        date(2025, 11, 8),
-        date(2026, 2, 8),
-    ],
-    "amounts": [
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        102.00,
-    ],
-}
-
-mr35o = {
-    "tickerPesos": "MR35O",
-    "tickerDolar": "MR35D",
-    "dates": [
-        date(2025, 2, 28),
-        date(2025, 8, 28),
-        date(2026, 2, 28),
-        date(2026, 6, 28),
-        date(2027, 2, 28),
-        date(2027, 8, 28),
-    ],
-    "amounts": [
-        4.88,
-        4.82,
-        4.88,
-        4.82,
-        4.88,
-        104.82,
-    ],
-}
-
-lecgo = {
-    "tickerPesos": "LECGO",
-    "tickerDolar": "LECGD",
-    "dates": [
-        date(2025, 2, 28),
-        date(2025, 8, 28),
-        date(2026, 2, 28),
-        date(2026, 6, 28),
-        date(2027, 2, 28),
-        date(2027, 8, 28),
-    ],
-    "amounts": [
-        4.88,
-        4.82,
-        4.88,
-        4.82,
-        4.88,
-        104.82,
     ],
 }
 
@@ -1740,48 +916,6 @@ ymcxo = {
     ],
 }
 
-snsbo = {
-    "tickerPesos": "SNSBO",
-    "tickerDolar": "SNSBD",
-    "dates": [
-        date(2025, 4, 14),
-        date(2025, 7, 14),
-        date(2025, 10, 14),
-        date(2026, 1, 14),
-        date(2026, 4, 14),
-        date(2026, 7, 14),
-        date(2026, 10, 14),
-    ],
-    "amounts": [
-        4.75,
-        2.38,
-        2.38,
-        2.38,
-        2.38,
-        2.38,
-        102.38,
-    ],
-}
-snabo = {
-    "tickerPesos": "SNABO",
-    "tickerDolar": "SNABD",
-    "dates": [
-        date(2025, 4, 29),
-        date(2025, 7, 29),
-        date(2025, 10, 29),
-        date(2026, 1, 29),
-        date(2026, 4, 29),
-        date(2026, 7, 29),
-    ],
-    "amounts": [
-        2.25,
-        2.25,
-        2.25,
-        2.25,
-        2.25,
-        102.25,
-    ],
-}
 
 vscro = {
     "tickerPesos": "VSCRO",
@@ -1820,61 +954,6 @@ vscro = {
     ],
 }
 
-pecgo = {
-    "tickerPesos": "PECGO",
-    "tickerDolar": "PECGD",
-    "dates": [
-        date(2025, 4, 28),
-        date(2025, 10, 28),
-        date(2026, 4, 28),
-        date(2026, 10, 28),
-        date(2027, 4, 28),
-        date(2027, 10, 28),
-        date(2028, 4, 28),
-        date(2028, 10, 28),
-    ],
-    "amounts": [
-        4.50,
-        4.50,
-        4.50,
-        4.50,
-        4.50,
-        4.50,
-        4.50,
-        104.50,
-    ],
-}
-
-gyc4o = {
-    "tickerPesos": "GYC4O",
-    "tickerDolar": "GYC4D",
-    "dates": [
-        date(2025, 4, 30),
-        date(2025, 7, 30),
-        date(2025, 10, 30),
-        date(2026, 1, 30),
-        date(2026, 4, 30),
-        date(2026, 7, 30),
-        date(2026, 10, 30),
-        date(2027, 1, 30),
-        date(2027, 4, 30),
-        date(2027, 7, 30),
-        date(2027, 10, 30),
-    ],
-    "amounts": [
-        4.00,
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        2.00,
-        102.00,
-    ],
-}
 
 rucdo = {
     "tickerPesos": "RUCDO",
@@ -1909,34 +988,6 @@ rucdo = {
     ],
 }
 
-co26 = {
-    "tickerPesos": "CO26",
-    "tickerDolar": "CO26D",
-    "dates": [
-        date(2024, 7, 27),
-        date(2024, 10, 27),
-        date(2025, 1, 27),
-        date(2025, 4, 27),
-        date(2025, 7, 27),
-        date(2025, 10, 27),
-        date(2026, 1, 27),
-        date(2026, 4, 27),
-        date(2026, 7, 27),
-        date(2026, 10, 27),
-    ],
-    "amounts": [
-        3.68,
-        3.62,
-        3.57,
-        3.51,
-        3.45,
-        3.4,
-        3.34,
-        3.29,
-        3.23,
-        3.18,
-    ],
-}
 
 pmm29 = {
     "tickerPesos": "PMM29",
@@ -2064,96 +1115,69 @@ ba37d = {
 }
 
 calendar = [
-    pnvco,
-    #crceo,
-    #yca6o,
-    ymcho,
+    # crceo,
+    # yca6o,
     ymcio,
     ymcjo,
-    #cp17o,
+    # cp17o,
     tlc1o,
     mtcgo,
     gncxo,
     pndco,
-    tlc5o,
-    cs38o,
     ircfo,
-    mgc9o,
-    #cs37o,
+    # cs37o,
     arc1o,
     rccjo,
-    ircho,
-    #mrcao,
-    #mrclo,
-    mgcho,
-    rccmo,
-    vsclo,
-    ircio,
-    ymcqo,
-    cp32o,
-    loc2o,
-    #aec1o,
-    #msseo,
-    gn40o,
-    #mrcoo,
+    # mrcao,
+    # mrclo,
+    # aec1o,
+    # mrcoo,
     cac5o,
-    #bol1o,
-    mgcjo,
+    # bol1o,
     loc3o,
-    npcao,
-    #lecbo,
-    npcbo,
-    #mrcqo,
+    # mrcqo,
     lms7o,
     lms8o,
     # pncuo,
     # loc4o,
-    pnvco,
     # vscno,
     cs44o,
     # ymcuo,
-    #leceo,
-    cp34o,
+    # leceo,
     ircjo,
-    #pecao,
-    #pecbo,
-    pnwco,
-    #dnc3o,
+    # pecao,
+    # pecbo,
+    # dnc3o,
     gn43o,
-    #mrcuo,
-    rucao,
-    mgclo,
+    # mrcuo,
     # rac5o,
-    #rac6o,
+    # rac6o,
     ttc7o,
     # cs45o,
-    #ots2o,
+    # ots2o,
     cac8o,
     pnxco,
     vscpo,
-    #crcjo,
+    # crcjo,
     # mrcxo,
-    ymcvo,
-    #mrcyo,
+    # mrcyo,
     hjcbo,
     irclo,
     lms9o,
     yfcio,
     tlcmo,
-    #mssfo,
-    #snabo,
-    #dnc5o,
-    #crclo,
-    #mr35o,
-    #lecgo,
+    # mssfo,
+    # snabo,
+    # dnc5o,
+    # crclo,
+    # mr35o,
+    # lecgo,
     ymcxo,
-    #snsbo,
+    # snsbo,
     vscro,
-    #pecgo,
-    #gyc4o,
-    #rucdo,
-
-    co26,
+    # pecgo,
+    # gyc4o,
+    # rucdo,
     pmm29,
     ndt25,
     ba37d,
@@ -2186,9 +1210,9 @@ def get_dolar():
 
 def get_token():
     config = configparser.ConfigParser()
-    config.read('config.ini')
-    usuario = config['credentials']['balanz_username']
-    password = config['credentials']['balanz_password']
+    config.read("config.ini")
+    usuario = config["credentials"]["balanz_username"]
+    password = config["credentials"]["balanz_password"]
 
     r = requests.post(
         "https://clientes.balanz.com/api/v1/auth/init?avoidAuthRedirect=true",

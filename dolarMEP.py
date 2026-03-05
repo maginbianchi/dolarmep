@@ -475,7 +475,7 @@ def run():
         df[(df.pesos_a_USDCI > 1) & (df.pesos_a_USDCI < pesos_a_USD_Min)]
         .loc[df["ticker"].isin(mis_activos), :]
         .sort_values(by=["pesos_a_USDCI"], ascending=True)
-    )
+    ) # type: ignore
     if not df_p_a_USDCI.empty:
         print("\nPesos a USDCI (Mis activos)")
         print(
@@ -530,7 +530,7 @@ def run():
                 df[df.USD_a_pesosCI > USDCI_a_pesosCI_MAX]
                 .loc[df["ticker"].isin(mis_activos), :]
                 .sort_values(by=["USD_a_pesosCI"], ascending=False)
-            )
+            ) # type: ignore
             print("\nUSD 24hs a Pesos CI (Mis activos)")
             print(
                 tabulate(

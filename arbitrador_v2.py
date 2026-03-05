@@ -236,7 +236,7 @@ class WebSocketClient:
 class Executer:
     def __init__(
         self,
-        df: pd.DataFrame,
+        df,
         mis_activos: List[str],
         ratio: float = 1.0008,
         ratio_ci: float = 1.0015,
