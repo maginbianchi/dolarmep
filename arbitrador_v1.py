@@ -178,6 +178,7 @@ class Executer:
         print(
             "\n##############################################################################################\n"
         )
+        window = 3
 
         USD_a_pesos_MAX = self.df.USD_a_pesos.max()
         USDCI_a_pesos_MAX = (
@@ -195,7 +196,7 @@ class Executer:
             if USD_a_pesos_MAX * RATIO >= USDCI_a_pesos_MAX:
                 self.df_USD_a_p = self.df.sort_values(
                     by=["USD_a_pesos"], ascending=False
-                ).iloc[0:2]
+                ).iloc[0:window]
                 print("USD 24hs")
                 print(
                     tabulate(
@@ -210,7 +211,7 @@ class Executer:
             else:
                 self.df_USDCI_a_p = self.df.sort_values(
                     by=["USDCI_a_pesos"], ascending=False
-                ).iloc[0:2]
+                ).iloc[0:window]
                 print("USD CI")
                 print(
                     tabulate(
@@ -232,7 +233,7 @@ class Executer:
             self.df_p_a_USD = (
                 self.df[self.df.pesos_a_USD > 1]
                 .sort_values(by=["pesos_a_USD"], ascending=True)
-                .iloc[0:2]
+                .iloc[0:window]
             )
             print(
                 tabulate(
@@ -261,7 +262,7 @@ class Executer:
                 tabulate(
                     self.df_p_a_USDCI[
                         ["ticker", "prVentaPesos", "prCompraDolarCI", "pesos_a_USDCI"]
-                    ].iloc[0:2],  # type: ignore
+                    ].iloc[0:window],  # type: ignore
                     headers="keys",
                     tablefmt="mixed_outline",
                     floatfmt=".2f",
@@ -490,17 +491,15 @@ def create_instrument(ticker: str, tickerD: str) -> List:
 
 if __name__ == "__main__":
     mis_activos = [
-        "ARC1O",
+        "CACDO",
         "CO35",
-        "CS49O",
         "GN49O",
         "IRCPO",
         "MGCOO",
         "MGCRO",
-        "MSSEO",
-        "NPCCO",
         "TLCMO",
         "TLCPO",
+        "TLCTO",
         "VSCTO",
         "YFCJO",
         "YM34O",
@@ -510,7 +509,6 @@ if __name__ == "__main__":
     instrumentos = [
         create_instrument("YMCIO", "YMCID"),
         create_instrument("YMCXO", "YMCXD"),
-        create_instrument("TLC1O", "TLC1D"),
         create_instrument("TLCMO", "TLCMD"),
         create_instrument("MTCGO", "MTCGD"),
         create_instrument("ARC1O", "ARC1D"),
@@ -518,7 +516,6 @@ if __name__ == "__main__":
         create_instrument("DNC3O", "DNC3D"),
         create_instrument("DNC5O", "DNC5D"),
         create_instrument("MSSEO", "MSSED"),
-        create_instrument("LOC3O", "LOC3D"),
         create_instrument("VSCRO", "VSCRD"),
         create_instrument("SNABO", "SNABD"),
         create_instrument("RUCDO", "RUCDD"),
@@ -529,7 +526,6 @@ if __name__ == "__main__":
         create_instrument("IRCFO", "IRCFD"),
         create_instrument("IRCJO", "IRCJD"),
         create_instrument("PNDCO", "PNDCD"),
-        create_instrument("CS38O", "CS38D"),
         create_instrument("CS44O", "CS44D"),
         create_instrument("CAC5O", "CAC5D"),
         create_instrument("LMS7O", "LMS7D"),
@@ -542,7 +538,6 @@ if __name__ == "__main__":
         create_instrument("OTS2O", "OTS2D"),
         create_instrument("TSC3O", "TSC3D"),
         create_instrument("VSCPO", "VSCPD"),
-        create_instrument("YMCVO", "YMCVD"),
         create_instrument("HJCBO", "HJCBD"),
         create_instrument("IRCLO", "IRCLD"),
         create_instrument("LMS9O", "LMS9D"),
@@ -622,14 +617,15 @@ if __name__ == "__main__":
         create_instrument("HJCJO", "HJCJD"),
         create_instrument("MGCQO", "MGCQD"),
         create_instrument("RC1CO", "RC1CD"),
-        create_instrument("DNC8O", "DNC8D"),
         create_instrument("BYCVO", "BYCVD"),
         create_instrument("BF37O", "BF37D"),
         create_instrument("YM40O", "YM40D"),
         create_instrument("NPCCO", "NPCCD"),
         create_instrument("PN41O", "PN41D"),
         create_instrument("CS49O", "CS49D"),
+        create_instrument("T641O", "T641D"),
         create_instrument("T652O", "T652D"),
+        create_instrument("T662O", "T662D"),
         create_instrument("AERBO", "AERBD"),
         create_instrument("NBS1O", "NBS1D"),
         create_instrument("VSCOO", "VSCOD"),
@@ -674,10 +670,16 @@ if __name__ == "__main__":
         create_instrument("MJC1O", "MJC1D"),
         create_instrument("OLC7O", "OLC7D"),
         create_instrument("HBCFO", "HBCFD"),
+        create_instrument("PLC6O", "PLC6D"),
+        create_instrument("TLCUO", "TLCUD"),
+        create_instrument("CP40O", "CP40D"),
+        create_instrument("VSCXO", "VSCXD"),
+        create_instrument("YM43O", "YM43D"),
+        create_instrument("MGCTO", "MGCTD"),
+        create_instrument("CO35", "CO35D"),
+        create_instrument("CO26", "CO26D"),
         create_instrument("BA37D", "BA7DD"),
         create_instrument("NDT25", "NDT5D"),
-        create_instrument("CO26", "CO26D"),
-        create_instrument("CO35", "CO35D"),
         create_instrument("PMM29", "PM29D"),
         create_instrument("SA24D", "S24DD"),
         create_instrument("AL30", "AL30D"),
@@ -687,6 +689,7 @@ if __name__ == "__main__":
         create_instrument("BPY26", "BPY6D"),
         create_instrument("BPOD7", "BPD7D"),
         create_instrument("AO27", "AO27D"),
+        create_instrument("AO28", "AO28D"),
     ]
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
     CONFIG_FILE_PATH = os.path.join(PROJECT_ROOT, "config.ini")

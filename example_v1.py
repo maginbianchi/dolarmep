@@ -326,9 +326,9 @@ class Executer:
                         item["max_quant"],
                     )
 
-                    amount = quant * item["prVentaDolar"]
+                    amount = quant * item["prCompraDolar"]
                     quant_al30 = min(
-                        int(amount / al30["prCompraDolar"]), max_quant_al30
+                        int(amount / al30["prVentaDolar"]), max_quant_al30
                     )
 
                     logger.info(
@@ -626,26 +626,31 @@ def create_instrument(ticker: str, tickerD: str, max_quant: int = 200) -> Dict:
 # ====================== MAIN ======================
 if __name__ == "__main__":
     instrumentos = [
+        create_instrument("AO27", "AO27D", 100),
         create_instrument("AL30", "AL30D", 1800),
-        create_instrument("YM34O", "YM34D"),
-        create_instrument("YMCXO", "YMCXD"),
-        create_instrument("RUCDO", "RUCDD"),
-        create_instrument("TLCTO", "TLCTD"),
-        create_instrument("PQCSO", "PQCSD"),
-        create_instrument("TLCPO", "TLCPD"),
+        create_instrument("DNC3O", "DNC3D"),
+        create_instrument("DNC5O", "DNC5D"),
+        create_instrument("DNC7O", "DNC7D", 400),
         create_instrument("IRCPO", "IRCPD"),
-        create_instrument("DNC7O", "DNC7D"),
-        create_instrument("DNC8O", "DNC8D"),
-        create_instrument("VSCVO", "VSCVD", 1000),
-        create_instrument("TSC4O", "TSC4D", 1000),
-        create_instrument("TTCDO", "TTCDD", 1000),
-        create_instrument("TLCMO", "TLCMD", 1000),
-        create_instrument("YM37O", "YM37D"),
-        create_instrument("YM42O", "YM42D"),
+        create_instrument("LOC5O", "LOC5D",500),
         create_instrument("LOC6O", "LOC6D"),
         create_instrument("OLC5O", "OLC5D", 1000),
+        create_instrument("OLC6O", "OLC6D"),
+        create_instrument("OLC7O", "OLC7D"),
+        create_instrument("PLC4O", "PLC4D", 1000),
         create_instrument("PN43O", "PN43D", 1000),
-        create_instrument("AO27", "AO27D", 100),
+        create_instrument("PQCSO", "PQCSD", 300),
+        create_instrument("RUCDO", "RUCDD", 500),
+        create_instrument("TLCMO", "TLCMD", 1000),
+        create_instrument("TLCPO", "TLCPD"),
+        create_instrument("TLCTO", "TLCTD", 1000),
+        create_instrument("TSC4O", "TSC4D", 1000),
+        create_instrument("TTCDO", "TTCDD", 1000),
+        create_instrument("VSCVO", "VSCVD", 1000),
+        create_instrument("YM34O", "YM34D"),
+        create_instrument("YM37O", "YM37D"),
+        create_instrument("YM42O", "YM42D"),
+        create_instrument("YMCXO", "YMCXD"),
     ]
 
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))

@@ -350,18 +350,6 @@ bol1o = {
 }
 
 
-loc3o = {
-    "tickerPesos": "LOC3O",
-    "tickerDolar": "LOC3D",
-    "dates": [
-        date(2024, 9, 11),
-        date(2025, 3, 11),
-        date(2025, 9, 11),
-        date(2026, 3, 11),
-    ],
-    "amounts": [3.75, 3.75, 3.75, 103.75],
-}
-
 
 lms7o = {
     "tickerPesos": "LMS7O",
@@ -1134,7 +1122,6 @@ calendar = [
     # mrcoo,
     cac5o,
     # bol1o,
-    loc3o,
     # mrcqo,
     lms7o,
     lms8o,
