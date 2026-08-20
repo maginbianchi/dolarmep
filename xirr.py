@@ -89,71 +89,6 @@ ymcjo = {
     ],
 }
 
-
-tlc1o = {
-    "tickerPesos": "TLC1O",
-    "tickerDolar": "TLC1D",
-    "dates": [
-        date(2024, 7, 18),
-        date(2025, 1, 18),
-        date(2025, 7, 18),
-        date(2026, 1, 18),
-        date(2026, 7, 18),
-    ],
-    "amounts": [4, 4, 4, 4, 104],
-}
-
-mtcgo = {
-    "tickerPesos": "MTCGO",
-    "tickerDolar": "MTCGD",
-    "dates": [
-        date(2024, 6, 30),
-        date(2024, 9, 30),
-        date(2024, 12, 30),
-        date(2025, 3, 30),
-        date(2025, 6, 30),
-        date(2025, 9, 30),
-        date(2025, 12, 30),
-        date(2026, 3, 30),
-        date(2026, 6, 30),
-    ],
-    "amounts": [
-        2.74,
-        2.74,
-        2.74,
-        2.74,
-        2.74,
-        2.74,
-        2.74,
-        2.74,
-        102.74,
-    ],
-}
-
-gncxo = {
-    "tickerPesos": "GNCXO",
-    "tickerDolar": "GNCXD",
-    "dates": [
-        date(2024, 9, 2),
-        date(2025, 3, 2),
-        date(2025, 9, 2),
-        date(2026, 3, 2),
-        date(2026, 9, 2),
-        date(2027, 3, 2),
-        date(2027, 9, 2),
-    ],
-    "amounts": [
-        13.06,
-        12.63,
-        12.19,
-        11.75,
-        11.31,
-        10.88,
-        10.44,
-    ],
-}
-
-
 pndco = {
     "tickerPesos": "PNDCO",
     "tickerDolar": "PNDCD",
@@ -1108,9 +1043,6 @@ calendar = [
     ymcio,
     ymcjo,
     # cp17o,
-    tlc1o,
-    mtcgo,
-    gncxo,
     pndco,
     ircfo,
     # cs37o,
@@ -1188,11 +1120,11 @@ def modified_duration(dates, amounts, xirr):
 
 def get_dolar():
     r = requests.post(
-        "https://www.bullmarketbrokers.com/Information/StockPrice/GetDollarPrice",
+        "https://inversiones.bullmarket.com.ar/Information/StockPrice/GetDollarsPriceOnDashboard",
         headers={"Accept": "application/json"},
     )
     data = simplejson.loads(r.text)
-    return (data["bidPrice"] + data["bidPrice"]) / 2
+    return (data["dollarMep"]["bidPrice"] + data["dollarMep"]["askPrice"]) / 2
 
 
 def get_token():
