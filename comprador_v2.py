@@ -438,12 +438,13 @@ def create_instrument(ticker: str, tickerD: str, max_quant: int = 500) -> Dict:
 
 
 def load_instruments(path: str) -> List[Dict]:
-    """Lee instrumentos desde un CSV (ticker,tickerD). Ignora líneas vacías y las que empiezan con #."""
     instrumentos = []
     with open(path, newline="", encoding="utf-8") as f:
         for row in csv.reader(f):
-            if not row or row[0].strip().startswith("#") and row[2].strip() == "0":
+            if not row or row[0].strip().startswith("#"):
                 continue
+            if len(row) < 4 or row[2].strip() != "1":
+                continue  # sin flag o flag distinto de 1 → no operar
             instrumentos.append(
                 create_instrument(row[0].strip(), row[1].strip(), int(row[3].strip()))
             )
