@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Set
 import logging
 import os
 import configparser
-import copy
+import csv
 
 # ====================== CONSTANTES ======================
 DEFAULT_API_URL = "https://api.cocos.xoms.com.ar"
@@ -260,6 +260,7 @@ class Executer:
             )
         else:
             ticker["pesos_a_USD"] = None
+
     def pre_execute(self, data: List) -> None:
         for record in data:
             values = str(record).split("|")
@@ -304,7 +305,9 @@ class Executer:
                 inst["cierreAnteriorPesos"] = float(values[15]) if values[15] else None
                 inst["minPesos"] = float(values[11]) if values[11] else None
 
-                self.execute(inst.copy())  # Pasar una copia para evitar modificaciones durante la ejecución
+                self.execute(
+                    inst.copy()
+                )  # Pasar una copia para evitar modificaciones durante la ejecución
 
             # Actualizar por ticker de dólares
             elif ticker in self.instrumentos_by_tickerD:
@@ -341,7 +344,11 @@ class Executer:
         else:
             if ticker["pesos_a_USD"] * ratio < self.al30["USD_a_pesos"]:
                 logger.info("USD A PESOS AL30: {:.2f}".format(self.al30["USD_a_pesos"]))
-                logger.info("PESOS A USD {}: {:.2f}".format(ticker["ticker"].upper(), ticker["pesos_a_USD"]))
+                logger.info(
+                    "PESOS A USD {}: {:.2f}".format(
+                        ticker["ticker"].upper(), ticker["pesos_a_USD"]
+                    )
+                )
                 logger.info(json.dumps(ticker, indent=2, ensure_ascii=False))
                 quant = min(
                     ticker["siCompraDolar"],
@@ -430,146 +437,25 @@ def create_instrument(ticker: str, tickerD: str, max_quant: int = 500) -> Dict:
     }
 
 
+def load_instruments(path: str) -> List[Dict]:
+    """Lee instrumentos desde un CSV (ticker,tickerD). Ignora líneas vacías y las que empiezan con #."""
+    instrumentos = []
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.reader(f):
+            if not row or row[0].strip().startswith("#") and row[2].strip() == "0":
+                continue
+            instrumentos.append(
+                create_instrument(row[0].strip(), row[1].strip(), int(row[3].strip()))
+            )
+    return instrumentos
+
+
 # ====================== MAIN ======================
 if __name__ == "__main__":
-    instrumentos = [
-        create_instrument("AL30", "AL30D"),
-        create_instrument("ARC1O", "ARC1D", 1000),
-        create_instrument("BACGO", "BACGD", 1000),
-        create_instrument("BF37O", "BF37D", 1000),
-        create_instrument("BGC4O", "BGC4D", 1000),
-        create_instrument("BYCHO", "BYCHD", 2000),
-        create_instrument("BYCVO", "BYCVD", 2000),
-        create_instrument("BYCXO", "BYCXD", 1000),
-        create_instrument("CACBO", "CACBD"),
-        create_instrument("CACDO", "CACDD"),
-        create_instrument("CP36O", "CP36D"),
-        create_instrument("CP37O", "CP37D"),
-        create_instrument("CP38O", "CP38D"),
-        create_instrument("CS44O", "CS44D"),
-        create_instrument("CS47O", "CS47D"),
-        create_instrument("CS48O", "CS48D"),
-        create_instrument("CS49O", "CS49D"),
-        create_instrument("CS50O", "CS50D"),
-        create_instrument("CS53O", "CS53D"),
-        create_instrument("CIC7O", "CIC7D"),
-        create_instrument("CIC9O", "CIC9D"),
-        create_instrument("CICAO", "CICAD"),
-        create_instrument("CICBO", "CICBD"),
-        create_instrument("DEC2O", "DEC2D"),
-        create_instrument("DNC3O", "DNC3D"),
-        create_instrument("DNC5O", "DNC5D"),
-        create_instrument("DNC7O", "DNC7D"),
-        create_instrument("DNCAO", "DNCAD"),
-        create_instrument("DNCBO", "DNCBD"),
-        create_instrument("FO4AO", "FO4AD"),
-        create_instrument("FYC1O", "FYC1D"),
-        create_instrument("GN47O", "GN47D"),
-        create_instrument("GN49O", "GN49D"),
-        create_instrument("HJCHO", "HJCHD", 1200),
-        create_instrument("HJCFO", "HJCFD", 1200),
-        create_instrument("HJCGO", "HJCGD", 1200),
-        create_instrument("HJCJO", "HJCJD", 1000),
-        create_instrument("HJCKO", "HJCKD", 1000),
-        create_instrument("HJCLO", "HJCLD", 1000),
-        create_instrument("IRCFO", "IRCFD"),
-        create_instrument("IRCJO", "IRCJD"),
-        create_instrument("IRCLO", "IRCLD"),
-        create_instrument("IRCOO", "IRCOD"),
-        create_instrument("IRCPO", "IRCPD"),
-        create_instrument("IRCQO", "IRCQD"),
-        create_instrument("LDCGO", "LDCGD"),
-        create_instrument("LOC5O", "LOC5D"),
-        create_instrument("LOC6O", "LOC6D"),
-        create_instrument("MCC1O", "MCC1D"),
-        create_instrument("MCC2O", "MCC2D"),
-        create_instrument("MCC3O", "MCC3D"),
-        create_instrument("MGCQO", "MGCQD"),
-        create_instrument("MGCTO", "MGCTD", 1000),
-        create_instrument("MIC3O", "MIC3D"),
-        create_instrument("MIC4O", "MIC4D"),
-        create_instrument("MTC2O", "MTC2D"),
-        create_instrument("NDT25", "NDT5D"),
-        create_instrument("NPCCO", "NPCCD"),
-        create_instrument("NPCDO", "NPCDD"),
-        create_instrument("OLC5O", "OLC5D"),
-        create_instrument("OLC6O", "OLC6D"),
-        create_instrument("OLC7O", "OLC7D"),
-        create_instrument("OTS2O", "OTS2D"),
-        create_instrument("OTS3O", "OTS3D"),
-        create_instrument("OTS5O", "OTS5D"),
-        create_instrument("OTS6O", "OTS6D"),
-        create_instrument("OZC3O", "OZC3D"),
-        create_instrument("PFC2O", "PFC2D"),
-        create_instrument("PFC3O", "PFC3D"),
-        create_instrument("PLC1O", "PLC1D"),
-        create_instrument("PLC2O", "PLC2D"),
-        create_instrument("PLC3O", "PLC3D"),
-        create_instrument("PLC4O", "PLC4D", 1000),
-        create_instrument("PLC5O", "PLC5D", 1000),
-        create_instrument("PLC6O", "PLC6D"),
-        create_instrument("PLC7O", "PLC7D"),
-        create_instrument("PMM29", "PM29D"),
-        create_instrument("PN35O", "PN35D"),
-        create_instrument("PN36O", "PN36D"),
-        create_instrument("PN37O", "PN37D"),
-        create_instrument("PN38O", "PN38D"),
-        create_instrument("PN41O", "PN41D"),
-        create_instrument("PN42O", "PN42D"),
-        create_instrument("PN43O", "PN43D"),
-        create_instrument("PNDCO", "PNDCD"),
-        create_instrument("PNWCO", "PNWCD"),
-        create_instrument("PNXCO", "PNXCD", 1000),
-        create_instrument("PQCRO", "PQCRD"),
-        create_instrument("PQCSO", "PQCSD"),
-        create_instrument("RC1CO", "RC1CD", 1000),
-        create_instrument("RC2CO", "RC2CD"),
-        create_instrument("RC5CO", "RC5CD"),
-        create_instrument("RCCRO", "RCCRD"),
-        create_instrument("RUCDO", "RUCDD"),
-        create_instrument("RUCEO", "RUCED"),
-        create_instrument("SBC3O", "SBC3D"),
-        create_instrument("T641O", "T641D"),
-        create_instrument("T652O", "T652D"),
-        create_instrument("T662O", "T662D"),
-        create_instrument("T672O", "T672D"),
-        create_instrument("TLCMO", "TLCMD", 1000),
-        create_instrument("TLCOO", "TLCOD"),
-        create_instrument("TLCPO", "TLCPD"),
-        create_instrument("TLCQO", "TLCQD"),
-        create_instrument("TLCTO", "TLCTD"),
-        create_instrument("TLCWO", "TLCWD"),
-        create_instrument("TSC4O", "TSC4D", 1000),
-        create_instrument("TTC9O", "TTC9D"),
-        create_instrument("TTCAO", "TTCAD", 1000),
-        create_instrument("TTCDO", "TTCDD", 1000),
-        create_instrument("TTCEO", "TTCED"),
-        create_instrument("VBC1O", "VBC1D", 1000),
-        create_instrument("VBC2O", "VBC2D", 1000),
-        create_instrument("VSCOO", "VSCOD"),
-        create_instrument("VSCPO", "VSCPD"),
-        create_instrument("VSCRO", "VSCRD"),
-        create_instrument("VSCVO", "VSCVD", 1000),
-        create_instrument("VSCXO", "VSCXD", 1000),
-        create_instrument("XMC1O", "XMC1D"),
-        create_instrument("YM34O", "YM34D"),
-        create_instrument("YM35O", "YM35D"),
-        create_instrument("YM37O", "YM37D"),
-        create_instrument("YM38O", "YM38D"),
-        create_instrument("YM39O", "YM39D"),
-        create_instrument("YM40O", "YM40D"),
-        create_instrument("YM41O", "YM41D"),
-        create_instrument("YM42O", "YM42D"),
-        create_instrument("YM43O", "YM43D"),
-        create_instrument("YMCIO", "YMCID"),
-        create_instrument("YMCJO", "YMCJD"),
-        create_instrument("YMCXO", "YMCXD"),
-        create_instrument("YMCYO", "YMCYD"),
-        create_instrument("YFCJO", "YFCJD", 1000),
-        create_instrument("ZZC1O", "ZZC1D"),
-    ]
-
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+    instrumentos = load_instruments(os.path.join(PROJECT_ROOT, "data/instrumentos.csv"))
+
     CONFIG_FILE_PATH = os.path.join(PROJECT_ROOT, "config.ini")
     if not os.path.exists(CONFIG_FILE_PATH):
         raise FileNotFoundError(

@@ -7,6 +7,7 @@ import websocket
 import pandas as pd
 import json
 import threading
+import csv
 from typing import List, Tuple, Optional
 
 RATIO = 1.0007
@@ -189,9 +190,7 @@ class Executer:
         pesos_a_USD_Min = self.df[self.df.pesos_a_USD > 1].pesos_a_USD.min()
 
         # Verifico que el maximo entre "USD a pesos" o "USDCI a pesos" sea mayor a "pesos a USD" (multiplicado por el ratio)
-        if pesos_a_USD_Min * RATIO < max(
-            USD_a_pesos_MAX, USDCI_a_pesos_MAX / RATIO
-        ):
+        if pesos_a_USD_Min * RATIO < max(USD_a_pesos_MAX, USDCI_a_pesos_MAX / RATIO):
             # Si la condición es verdadera, verifico cual de los dos es mayor e imprimo la tabla
             if USD_a_pesos_MAX * RATIO >= USDCI_a_pesos_MAX:
                 self.df_USD_a_p = self.df.sort_values(
@@ -390,7 +389,7 @@ class Executer:
         self.df_dolares["%"] = (
             (self.df_dolares.prCompraDolar / self.df_dolares.prVentaDolarCI) - 1
         ) * 100
-        if not self.df_dolares[self.df_dolares["%"] > 0.20].empty:
+        if not self.df_dolares[self.df_dolares["%"] > 0.10].empty:
             print(
                 tabulate(
                     self.df_dolares[["ticker", "prVentaDolarCI", "prCompraDolar", "%"]],  # type: ignore
@@ -489,274 +488,33 @@ def create_instrument(ticker: str, tickerD: str) -> List:
     return [ticker, tickerD, None, None, None, None, None, None, None, None]
 
 
-if __name__ == "__main__":
-    mis_activos = [
-        "CACDO",
-        # "CO35",
-        # "CS52O",
-        "GN49O",
-        # "IRCPO",
-        # "PLC7O",
-        # "PN43O",
-        "TLCMO",
-        # "TLCPO",
-        # "TLCTO",
-        # "TSC4O",
-        # "YFCJO",
-        # "YM34O",
-        # "YMCXO",
-        "MGCEO",
-        #"HJCIO",
-    ]
+def load_instruments(path: str) -> List[List]:
+    """Lee instrumentos desde un CSV (ticker,tickerD). Ignora líneas vacías y las que empiezan con #."""
+    instrumentos = []
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.reader(f):
+            if not row or row[0].strip().startswith("#"):
+                continue
+            instrumentos.append(create_instrument(row[0].strip(), row[1].strip()))
+    return instrumentos
 
-    instrumentos = [
-        create_instrument("YMCIO", "YMCID"),
-        create_instrument("YMCXO", "YMCXD"),
-        create_instrument("TLCMO", "TLCMD"),
-        create_instrument("ARC1O", "ARC1D"),
-        create_instrument("DNC3O", "DNC3D"),
-        create_instrument("DNC5O", "DNC5D"),
-        create_instrument("VSCRO", "VSCRD"),
-        create_instrument("RUCDO", "RUCDD"),
-        create_instrument("YFCJO", "YFCJD"),
-        create_instrument("YM34O", "YM34D"),
-        create_instrument("IRCPO", "IRCPD"),
-        create_instrument("YMCJO", "YMCJD"),
-        create_instrument("IRCFO", "IRCFD"),
-        create_instrument("IRCJO", "IRCJD"),
-        create_instrument("PNDCO", "PNDCD"),
-        create_instrument("CS44O", "CS44D"),
-        create_instrument("CAC5O", "CAC5D"),
-        create_instrument("LMS7O", "LMS7D"),
-        create_instrument("LMS8O", "LMS8D"),
-        create_instrument("PNWCO", "PNWCD"),
-        create_instrument("GN43O", "GN43D"),
-        create_instrument("RAC6O", "RAC6D"),
-        create_instrument("PNXCO", "PNXCD"),
-        create_instrument("OTS2O", "OTS2D"),
-        create_instrument("TSC3O", "TSC3D"),
-        create_instrument("VSCPO", "VSCPD"),
-        create_instrument("IRCLO", "IRCLD"),
-        create_instrument("LMS9O", "LMS9D"),
-        create_instrument("YFCIO", "YFCID"),
-        create_instrument("LIC6O", "LIC6D"),
-        create_instrument("PN35O", "PN35D"),
-        create_instrument("BYCHO", "BYCHD"),
-        create_instrument("MGCMO", "MGCMD"),
-        create_instrument("MGCNO", "MGCND"),
-        create_instrument("YMCYO", "YMCYD"),
-        create_instrument("YMCZO", "YMCZD"),
-        create_instrument("HJCFO", "HJCFD"),
-        create_instrument("HJCGO", "HJCGD"),
-        create_instrument("GN47O", "GN47D"),
-        create_instrument("DNC7O", "DNC7D"),
-        create_instrument("IRCNO", "IRCND"),
-        create_instrument("IRCOO", "IRCOD"),
-        create_instrument("PQCRO", "PQCRD"),
-        create_instrument("TTC9O", "TTC9D"),
-        create_instrument("GYC4O", "GYC4D"),
-        create_instrument("OTS3O", "OTS3D"),
-        create_instrument("XMC1O", "XMC1D"),
-        create_instrument("CIC7O", "CIC7D"),
-        create_instrument("PN36O", "PN36D"),
-        create_instrument("PN37O", "PN37D"),
-        create_instrument("CS47O", "CS47D"),
-        create_instrument("YFCKO", "YFCKD"),
-        create_instrument("YFCLO", "YFCLD"),
-        create_instrument("OZC3O", "OZC3D"),
-        create_instrument("TLCOO", "TLCOD"),
-        create_instrument("VSCTO", "VSCTD"),
-        create_instrument("SIC1O", "SIC1D"),
-        create_instrument("MGCOO", "MGCOD"),
-        create_instrument("HJCHO", "HJCHD"),
-        create_instrument("OT41O", "OT41D"),
-        create_instrument("OT42O", "OT42D"),
-        create_instrument("TTCAO", "TTCAD"),
-        create_instrument("PLC1O", "PLC1D"),
-        create_instrument("PLC2O", "PLC2D"),
-        create_instrument("LDCGO", "LDCGD"),
-        create_instrument("PN38O", "PN38D"),
-        create_instrument("PQCSO", "PQCSD"),
-        create_instrument("DEC2O", "DEC2D"),
-        create_instrument("ZZC1O", "ZZC1D"),
-        create_instrument("YM35O", "YM35D"),
-        create_instrument("PUC2O", "PUC2D"),
-        create_instrument("GYC5O", "GYC5D"),
-        create_instrument("GN48O", "GN48D"),
-        create_instrument("CP37O", "CP37D"),
-        create_instrument("MCC1O", "MCC1D"),
-        create_instrument("MCC2O", "MCC2D"),
-        create_instrument("VBC1O", "VBC1D"),
-        create_instrument("MSSGO", "MSSGD"),
-        create_instrument("PLC3O", "PLC3D"),
-        create_instrument("YM37O", "YM37D"),
-        create_instrument("RCCRO", "RCCRD"),
-        create_instrument("YFCMO", "YFCMD"),
-        create_instrument("HJCIO", "HJCID"),
-        create_instrument("TLCPO", "TLCPD"),
-        create_instrument("CIC9O", "CIC9D"),
-        create_instrument("PLC4O", "PLC4D"),
-        create_instrument("ZPC2O", "ZPC2D"),
-        create_instrument("VSCVO", "VSCVD"),
-        create_instrument("OLC5O", "OLC5D"),
-        create_instrument("CACBO", "CACBD"),
-        create_instrument("TLCQO", "TLCQD"),
-        create_instrument("EMC1O", "EMC1D"),
-        create_instrument("CS48O", "CS48D"),
-        create_instrument("HVS1O", "HVS1D"),
-        create_instrument("BACGO", "BACGD"),
-        create_instrument("PFC2O", "PFC2D"),
-        create_instrument("YM38O", "YM38D"),
-        create_instrument("YM39O", "YM39D"),
-        create_instrument("LOC5O", "LOC5D"),
-        create_instrument("HJCJO", "HJCJD"),
-        create_instrument("MGCQO", "MGCQD"),
-        create_instrument("RC1CO", "RC1CD"),
-        create_instrument("BYCVO", "BYCVD"),
-        create_instrument("BF37O", "BF37D"),
-        create_instrument("YM40O", "YM40D"),
-        create_instrument("NPCCO", "NPCCD"),
-        create_instrument("PN41O", "PN41D"),
-        create_instrument("CS49O", "CS49D"),
-        create_instrument("T641O", "T641D"),
-        create_instrument("T652O", "T652D"),
-        create_instrument("T662O", "T662D"),
-        create_instrument("T672O", "T672D"),
-        create_instrument("AERBO", "AERBD"),
-        create_instrument("NBS1O", "NBS1D"),
-        create_instrument("VSCOO", "VSCOD"),
-        create_instrument("VSCUO", "VSCUD"),
-        create_instrument("ZPC3O", "ZPC3D"),
-        create_instrument("SBC1O", "SBC1D"),
-        create_instrument("RC2CO", "RC2CD"),
-        create_instrument("JNC6O", "JNC6D"),
-        create_instrument("YM41O", "YM41D"),
-        create_instrument("PN42O", "PN42D"),
-        create_instrument("OTS5O", "OTS5D"),
-        create_instrument("VSCWO", "VSCWD"),
-        create_instrument("TTCDO", "TTCDD"),
-        create_instrument("TTCBO", "TTCBD"),
-        create_instrument("MIC3O", "MIC3D"),
-        create_instrument("AFCIO", "AFCID"),
-        create_instrument("BGC4O", "BGC4D"),
-        create_instrument("PLC5O", "PLC5D"),
-        create_instrument("MGCRO", "MGCRD"),
-        create_instrument("TSC4O", "TSC4D"),
-        create_instrument("GN49O", "GN49D"),
-        create_instrument("CICAO", "CICAD"),
-        create_instrument("YM42O", "YM42D"),
-        create_instrument("BPCUO", "BPCUD"),
-        create_instrument("CS50O", "CS50D"),
-        create_instrument("OLC6O", "OLC6D"),
-        create_instrument("YFCOO", "YFCOD"),
-        create_instrument("PN43O", "PN43D"),
-        create_instrument("CS51O", "CS51D"),
-        create_instrument("TLCTO", "TLCTD"),
-        create_instrument("BACHO", "BACHD"),
-        create_instrument("LOC6O", "LOC6D"),
-        create_instrument("FO4AO", "FO4AD"),
-        create_instrument("SNEBO", "SNEBD"),
-        create_instrument("MIC4O", "MIC4D"),
-        create_instrument("CACDO", "CACDD"),
-        create_instrument("RUCEO", "RUCED"),
-        create_instrument("AFCJO", "AFCJD"),
-        create_instrument("AFCKO", "AFCKD"),
-        create_instrument("AFCLO", "AFCLD"),
-        create_instrument("SXC2O", "SXC2D"),
-        create_instrument("MJC1O", "MJC1D"),
-        create_instrument("OLC7O", "OLC7D"),
-        create_instrument("HBCFO", "HBCFD"),
-        create_instrument("PLC6O", "PLC6D"),
-        create_instrument("TLCUO", "TLCUD"),
-        create_instrument("CP40O", "CP40D"),
-        create_instrument("VSCXO", "VSCXD"),
-        create_instrument("YM43O", "YM43D"),
-        create_instrument("MGCTO", "MGCTD"),
-        create_instrument("DNCAO", "DNCAD"),
-        create_instrument("CS52O", "CS52D"),
-        create_instrument("CS53O", "CS53D"),
-        create_instrument("NPCDO", "NPCDD"),
-        create_instrument("BF44O", "BF44D"),
-        create_instrument("BF45O", "BF45D"),
-        create_instrument("MCC3O", "MCC3D"),
-        create_instrument("PFC3O", "PFC3D"),
-        create_instrument("BYCWO", "BYCWD"),
-        create_instrument("BYCXO", "BYCXD"),
-        create_instrument("CICBO", "CICBD"),
-        create_instrument("CP36O", "CP36D"),
-        create_instrument("CP38O", "CP38D"),
-        create_instrument("FYC1O", "FYC1D"),
-        create_instrument("HJCKO", "HJCKD"),
-        create_instrument("LUC5O", "LUC5D"),
-        create_instrument("MG1RO", "MG1RD"),
-        create_instrument("MGCEO", "MGCED"),
-        create_instrument("OTS6O", "OTS6D"),
-        create_instrument("PQCTO", "PQCTD"),
-        create_instrument("PZCGO", "PZCGD"),
-        create_instrument("SBC2O", "SBC2D"),
-        create_instrument("TTCEO", "TTCED"),
-        create_instrument("RC5CO", "RC5CD"),
-        create_instrument("ICC6O", "ICC6D"),
-        create_instrument("TLCVO", "TLCVD"),
-        create_instrument("TLCWO", "TLCWD"),
-        create_instrument("VBC2O", "VBC2D"),
-        create_instrument("SBC3O", "SBC3D"),
-        create_instrument("BYY2O", "BYY2D"),
-        create_instrument("BYY3O", "BYY3D"),
-        create_instrument("IRCQO", "IRCQD"),
-        create_instrument("SIC2O", "SIC2D"),
-        create_instrument("MTC2O", "MTC2D"),
-        create_instrument("JNC7O", "JNC7D"),
-        create_instrument("PLC7O", "PLC7D"),
-        create_instrument("ZPC5O", "ZPC5D"),
-        create_instrument("HJCLO", "HJCLD"),
-        create_instrument("EAC4O", "EAC4D"),
-        create_instrument("DEC4O", "DEC4D"),
-        create_instrument("DNCBO", "DNCBD"),
-        create_instrument("VSCYO", "VSCYD"),
-        create_instrument("VSCZO", "VSCZD"),
-        create_instrument("BF48O", "BF48D"),
-        create_instrument("BF49O", "BF49D"),
-        create_instrument("BF50O", "BF50D"),
-        create_instrument("NPCEO", "NPCED"),
-        create_instrument("CO26", "CO26D"),
-        create_instrument("CO32", "CO32D"),
-        create_instrument("CO35", "CO35D"),
-        create_instrument("NZC2O", "NZC2D"),
-        create_instrument("NZC5O", "NZC5D"),
-        create_instrument("ERM33", "EM33D"),  
-        create_instrument("ERF25", "EF25D"),  
-        create_instrument("PUA36", "PUA6D"),
-        create_instrument("SFD34", "SFD4D"),
-        create_instrument("DICP", "DICPD"),
-        create_instrument("TX26", "TX26D"),
-        create_instrument("TX28", "TX28D"),
-        create_instrument("TX31", "TX31D"),
-        create_instrument("TZX27", "TZX7D"),
-        create_instrument("TZX28", "TZX8D"),
-        create_instrument("T15E7", "TE7D"),
-        create_instrument("TTD26", "TTD6D"),
-        create_instrument("TXMJ0", "TXJ0D"),
-        create_instrument("TZXM7", "TXM7D"),
-        create_instrument("TZXM8", "TXM8D"),
-        create_instrument("BA37D", "BA7DD"),
-        create_instrument("BB37D", "BB7DD"),
-        create_instrument("BDC33", "BC33D"),
-        create_instrument("BDC36", "BC36D"),
-        create_instrument("NDT25", "NDT5D"),
-        create_instrument("NDG34", "NDG4D"),
-        create_instrument("PMM29", "PM29D"),
-        create_instrument("SA24D", "S24DD"),
-        create_instrument("AL30", "AL30D"),
-        create_instrument("GD30", "GD30D"),
-        create_instrument("AL35", "AL35D"),
-        create_instrument("GD35", "GD35D"),
-        create_instrument("BPOD7", "BPD7D"),
-        create_instrument("AO27", "AO27D"),
-        create_instrument("AO28", "AO28D"),
-        create_instrument("AO29", "AO29D"),
-    ]
+
+def load_mis_activos(path: str) -> List[str]:
+    """Lee tickers desde un CSV (columna ticker). Ignora líneas vacías y las que empiezan con #."""
+    with open(path, newline="", encoding="utf-8") as f:
+        return [
+            row[0].strip()
+            for row in csv.reader(f)
+            if row and not row[0].strip().startswith("#")
+        ]
+
+
+if __name__ == "__main__":
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+    instrumentos = load_instruments(os.path.join(PROJECT_ROOT, "data/instrumentos.csv"))
+    mis_activos = load_mis_activos(os.path.join(PROJECT_ROOT, "data/mis_activos.csv"))
+
     CONFIG_FILE_PATH = os.path.join(PROJECT_ROOT, "config.ini")
     if not os.path.exists(CONFIG_FILE_PATH):
         raise FileNotFoundError(

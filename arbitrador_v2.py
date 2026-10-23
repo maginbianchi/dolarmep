@@ -13,6 +13,7 @@ from datetime import datetime
 import base64
 import os
 import configparser
+import csv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -556,209 +557,48 @@ class Executer:
         self.detect_ci_to_24hs()
         self.detect_24hs_to_ci()
 
-if __name__ == "__main__":
-    mis_activos = [
-        "ARC1O",
-        "CO35",
-        "CS39O",
-        "GN49O",
-        "IRCPO",
-        "MGCOO",
-        "MGCRO",
-        "MSSEO",
-        "NPCCO",
-        "TLCMO",
-        "TLCPO",
-        "VSCTO",
-        "YFCJO",
-        "YM34O",
-        "YMCXO",
-    ]
+# ====================== FUNCIÓN AUXILIAR ======================
+def create_instrument(ticker: str, tickerD: str) -> List:
+    """
+    Crea un array de instrumento con valores inicializados.
 
-    instrumentos = [
-        ["YMCIO", "YMCID", None, None, None, None, None, None, None, None],
-        ["YMCXO", "YMCXD", None, None, None, None, None, None, None, None],
-        ["TLC1O", "TLC1D", None, None, None, None, None, None, None, None],
-        ["TLCMO", "TLCMD", None, None, None, None, None, None, None, None],
-        ["MTCGO", "MTCGD", None, None, None, None, None, None, None, None],
-        ["ARC1O", "ARC1D", None, None, None, None, None, None, None, None],
-        ["BOL1O", "BOL1D", None, None, None, None, None, None, None, None],
-        ["DNC3O", "DNC3D", None, None, None, None, None, None, None, None],
-        ["DNC5O", "DNC5D", None, None, None, None, None, None, None, None],
-        ["MSSEO", "MSSED", None, None, None, None, None, None, None, None],
-        ["VSCRO", "VSCRD", None, None, None, None, None, None, None, None],
-        ["SNABO", "SNABD", None, None, None, None, None, None, None, None],
-        ["RUCDO", "RUCDD", None, None, None, None, None, None, None, None],
-        ["YFCJO", "YFCJD", None, None, None, None, None, None, None, None],
-        ["YM34O", "YM34D", None, None, None, None, None, None, None, None],
-        ["IRCPO", "IRCPD", None, None, None, None, None, None, None, None],
-        ["YMCJO", "YMCJD", None, None, None, None, None, None, None, None],
-        ["IRCFO", "IRCFD", None, None, None, None, None, None, None, None],
-        ["IRCJO", "IRCJD", None, None, None, None, None, None, None, None],
-        ["PNDCO", "PNDCD", None, None, None, None, None, None, None, None],
-        ["CS44O", "CS44D", None, None, None, None, None, None, None, None],
-        ["CAC5O", "CAC5D", None, None, None, None, None, None, None, None],
-        ["LMS7O", "LMS7D", None, None, None, None, None, None, None, None],
-        ["LMS8O", "LMS8D", None, None, None, None, None, None, None, None],
-        ["CP34O", "CP34D", None, None, None, None, None, None, None, None],
-        ["PNWCO", "PNWCD", None, None, None, None, None, None, None, None],
-        ["GN43O", "GN43D", None, None, None, None, None, None, None, None],
-        ["RAC6O", "RAC6D", None, None, None, None, None, None, None, None],
-        ["PNXCO", "PNXCD", None, None, None, None, None, None, None, None],
-        ["OTS2O", "OTS2D", None, None, None, None, None, None, None, None],
-        ["TSC3O", "TSC3D", None, None, None, None, None, None, None, None],
-        ["VSCPO", "VSCPD", None, None, None, None, None, None, None, None],
-        ["HJCBO", "HJCBD", None, None, None, None, None, None, None, None],
-        ["IRCLO", "IRCLD", None, None, None, None, None, None, None, None],
-        ["LMS9O", "LMS9D", None, None, None, None, None, None, None, None],
-        ["YFCIO", "YFCID", None, None, None, None, None, None, None, None],
-        ["LIC6O", "LIC6D", None, None, None, None, None, None, None, None],
-        ["PN35O", "PN35D", None, None, None, None, None, None, None, None],
-        ["BYCHO", "BYCHD", None, None, None, None, None, None, None, None],
-        ["MGCMO", "MGCMD", None, None, None, None, None, None, None, None],
-        ["MGCNO", "MGCND", None, None, None, None, None, None, None, None],
-        ["YMCYO", "YMCYD", None, None, None, None, None, None, None, None],
-        ["YMCZO", "YMCZD", None, None, None, None, None, None, None, None],
-        ["HJCFO", "HJCFD", None, None, None, None, None, None, None, None],
-        ["HJCGO", "HJCGD", None, None, None, None, None, None, None, None],
-        ["GN47O", "GN47D", None, None, None, None, None, None, None, None],
-        ["DNC7O", "DNC7D", None, None, None, None, None, None, None, None],
-        ["IRCNO", "IRCND", None, None, None, None, None, None, None, None],
-        ["IRCOO", "IRCOD", None, None, None, None, None, None, None, None],
-        ["PQCRO", "PQCRD", None, None, None, None, None, None, None, None],
-        ["TTC9O", "TTC9D", None, None, None, None, None, None, None, None],
-        ["GYC4O", "GYC4D", None, None, None, None, None, None, None, None],
-        ["OTS3O", "OTS3D", None, None, None, None, None, None, None, None],
-        ["XMC1O", "XMC1D", None, None, None, None, None, None, None, None],
-        ["CIC7O", "CIC7D", None, None, None, None, None, None, None, None],
-        ["PN36O", "PN36D", None, None, None, None, None, None, None, None],
-        ["PN37O", "PN37D", None, None, None, None, None, None, None, None],
-        ["CS47O", "CS47D", None, None, None, None, None, None, None, None],
-        ["YFCKO", "YFCKD", None, None, None, None, None, None, None, None],
-        ["YFCLO", "YFCLD", None, None, None, None, None, None, None, None],
-        ["OZC3O", "OZC3D", None, None, None, None, None, None, None, None],
-        ["TLCOO", "TLCOD", None, None, None, None, None, None, None, None],
-        ["VSCTO", "VSCTD", None, None, None, None, None, None, None, None],
-        ["SIC1O", "SIC1D", None, None, None, None, None, None, None, None],
-        ["MGCOO", "MGCOD", None, None, None, None, None, None, None, None],
-        ["HJCHO", "HJCHD", None, None, None, None, None, None, None, None],
-        ["OT41O", "OT41D", None, None, None, None, None, None, None, None],
-        ["OT42O", "OT42D", None, None, None, None, None, None, None, None],
-        ["TTCAO", "TTCAD", None, None, None, None, None, None, None, None],
-        ["PLC1O", "PLC1D", None, None, None, None, None, None, None, None],
-        ["PLC2O", "PLC2D", None, None, None, None, None, None, None, None],
-        ["SNSDO", "SNSDD", None, None, None, None, None, None, None, None],
-        ["LDCGO", "LDCGD", None, None, None, None, None, None, None, None],
-        ["PN38O", "PN38D", None, None, None, None, None, None, None, None],
-        ["PQCSO", "PQCSD", None, None, None, None, None, None, None, None],
-        ["DEC2O", "DEC2D", None, None, None, None, None, None, None, None],
-        ["ZZC1O", "ZZC1D", None, None, None, None, None, None, None, None],
-        ["YM35O", "YM35D", None, None, None, None, None, None, None, None],
-        ["PUC2O", "PUC2D", None, None, None, None, None, None, None, None],
-        ["GYC5O", "GYC5D", None, None, None, None, None, None, None, None],
-        ["GN48O", "GN48D", None, None, None, None, None, None, None, None],
-        ["CP37O", "CP37D", None, None, None, None, None, None, None, None],
-        ["MCC1O", "MCC1D", None, None, None, None, None, None, None, None],
-        ["MCC2O", "MCC2D", None, None, None, None, None, None, None, None],
-        ["VBC1O", "VBC1D", None, None, None, None, None, None, None, None],
-        ["MSSGO", "MSSGD", None, None, None, None, None, None, None, None],
-        ["PLC3O", "PLC3D", None, None, None, None, None, None, None, None],
-        ["YM37O", "YM37D", None, None, None, None, None, None, None, None],
-        ["RCCRO", "RCCRD", None, None, None, None, None, None, None, None],
-        ["YFCMO", "YFCMD", None, None, None, None, None, None, None, None],
-        ["HJCIO", "HJCID", None, None, None, None, None, None, None, None],
-        ["TLCPO", "TLCPD", None, None, None, None, None, None, None, None],
-        ["CIC9O", "CIC9D", None, None, None, None, None, None, None, None],
-        ["PLC4O", "PLC4D", None, None, None, None, None, None, None, None],
-        ["BF35O", "BF35D", None, None, None, None, None, None, None, None],
-        ["ZPC2O", "ZPC2D", None, None, None, None, None, None, None, None],
-        ["VSCVO", "VSCVD", None, None, None, None, None, None, None, None],
-        ["OLC5O", "OLC5D", None, None, None, None, None, None, None, None],
-        ["CACBO", "CACBD", None, None, None, None, None, None, None, None],
-        ["TLCQO", "TLCQD", None, None, None, None, None, None, None, None],
-        ["EMC1O", "EMC1D", None, None, None, None, None, None, None, None],
-        ["CS48O", "CS48D", None, None, None, None, None, None, None, None],
-        ["HVS1O", "HVS1D", None, None, None, None, None, None, None, None],
-        ["BACGO", "BACGD", None, None, None, None, None, None, None, None],
-        ["PFC2O", "PFC2D", None, None, None, None, None, None, None, None],
-        ["YM38O", "YM38D", None, None, None, None, None, None, None, None],
-        ["YM39O", "YM39D", None, None, None, None, None, None, None, None],
-        ["LOC5O", "LOC5D", None, None, None, None, None, None, None, None],
-        ["HJCJO", "HJCJD", None, None, None, None, None, None, None, None],
-        ["MGCQO", "MGCQD", None, None, None, None, None, None, None, None],
-        ["RC1CO", "RC1CD", None, None, None, None, None, None, None, None],
-        ["BYCVO", "BYCVD", None, None, None, None, None, None, None, None],
-        ["BF37O", "BF37D", None, None, None, None, None, None, None, None],
-        ["YM40O", "YM40D", None, None, None, None, None, None, None, None],
-        ["NPCCO", "NPCCD", None, None, None, None, None, None, None, None],
-        ["PN41O", "PN41D", None, None, None, None, None, None, None, None],
-        ["CS49O", "CS49D", None, None, None, None, None, None, None, None],
-        ["T652O", "T652D", None, None, None, None, None, None, None, None],
-        ["AERBO", "AERBD", None, None, None, None, None, None, None, None],
-        ["NBS1O", "NBS1D", None, None, None, None, None, None, None, None],
-        ["VSCOO", "VSCOD", None, None, None, None, None, None, None, None],
-        ["VSCUO", "VSCUD", None, None, None, None, None, None, None, None],
-        ["ZPC3O", "ZPC3D", None, None, None, None, None, None, None, None],
-        ["SBC1O", "SBC1D", None, None, None, None, None, None, None, None],
-        ["RC2CO", "RC2CD", None, None, None, None, None, None, None, None],
-        ["JNC6O", "JNC6D", None, None, None, None, None, None, None, None],
-        ["YM41O", "YM41D", None, None, None, None, None, None, None, None],
-        ["PN42O", "PN42D", None, None, None, None, None, None, None, None],
-        ["OTS5O", "OTS5D", None, None, None, None, None, None, None, None],
-        ["VSCWO", "VSCWD", None, None, None, None, None, None, None, None],
-        ["TTCDO", "TTCDD", None, None, None, None, None, None, None, None],
-        ["MIC3O", "MIC3D", None, None, None, None, None, None, None, None],
-        ["AFCIO", "AFCID", None, None, None, None, None, None, None, None],
-        ["BGC4O", "BGC4D", None, None, None, None, None, None, None, None],
-        ["PLC5O", "PLC5D", None, None, None, None, None, None, None, None],
-        ["MGCRO", "MGCRD", None, None, None, None, None, None, None, None],
-        ["TSC4O", "TSC4D", None, None, None, None, None, None, None, None],
-        ["GN49O", "GN49D", None, None, None, None, None, None, None, None],
-        ["CICAO", "CICAD", None, None, None, None, None, None, None, None],
-        ["YM42O", "YM42D", None, None, None, None, None, None, None, None],
-        ["BF39O", "BF39D", None, None, None, None, None, None, None, None],
-        ["BPCUO", "BPCUD", None, None, None, None, None, None, None, None],
-        ["CS50O", "CS50D", None, None, None, None, None, None, None, None],
-        ["OLC6O", "OLC6D", None, None, None, None, None, None, None, None],
-        ["YFCOO", "YFCOD", None, None, None, None, None, None, None, None],
-        ["PN43O", "PN43D", None, None, None, None, None, None, None, None],
-        ["CS51O", "CS51D", None, None, None, None, None, None, None, None],
-        ["TLCTO", "TLCTD", None, None, None, None, None, None, None, None],
-        ["BACHO", "BACHD", None, None, None, None, None, None, None, None],
-        ["LOC6O", "LOC6D", None, None, None, None, None, None, None, None],
-        ["FO4AO", "FO4AD", None, None, None, None, None, None, None, None],
-        ["SNEBO", "SNEBD", None, None, None, None, None, None, None, None],
-        ["MIC4O", "MIC4D", None, None, None, None, None, None, None, None],
-        ["CACDO", "CACDD", None, None, None, None, None, None, None, None],
-        ["RUCEO", "RUCED", None, None, None, None, None, None, None, None],
-        ["AFCJO", "AFCJD", None, None, None, None, None, None, None, None],
-        ["AFCKO", "AFCKD", None, None, None, None, None, None, None, None],
-        ["AFCLO", "AFCLD", None, None, None, None, None, None, None, None],
-        ["SXC2O", "SXC2D", None, None, None, None, None, None, None, None],
-        ["MJC1O", "MJC1D", None, None, None, None, None, None, None, None],
-        ["OLC7O", "OLC7D", None, None, None, None, None, None, None, None],
-        ["HBCFO", "HBCFD", None, None, None, None, None, None, None, None],
-        ["BA37D", "BA7DD", None, None, None, None, None, None, None, None],
-        ["NDT25", "NDT5D", None, None, None, None, None, None, None, None],
-        ["CO26", "CO26D", None, None, None, None, None, None, None, None],
-        ["CO35", "CO35D", None, None, None, None, None, None, None, None],
-        ["PMM29", "PM29D", None, None, None, None, None, None, None, None],
-        ["SA24D", "S24DD", None, None, None, None, None, None, None, None],
-        ["AL30", "AL30D", None, None, None, None, None, None, None, None],
-        ["GD30", "GD30D", None, None, None, None, None, None, None, None],
-        ["AL35", "AL35D", None, None, None, None, None, None, None, None],
-        ["GD35", "GD35D", None, None, None, None, None, None, None, None],
-        ["BPY26", "BPY6D", None, None, None, None, None, None, None, None],
-        ["BPOD7", "BPD7D", None, None, None, None, None, None, None, None],
-        ["GGAL", "GGALD", None, None, None, None, None, None, None, None],
-        ["YPFD", "YPFDD", None, None, None, None, None, None, None, None],
-        ["PAMP", "PAMPD", None, None, None, None, None, None, None, None],
-        ["TGSU2", "TGSUD", None, None, None, None, None, None, None, None],
-        ["BYMA", "BYMAD", None, None, None, None, None, None, None, None],
-        ["ALUA", "ALUAD", None, None, None, None, None, None, None, None],
-        ["BBAR", "BBARD", None, None, None, None, None, None, None, None],
-        ["TXAR", "TXARD", None, None, None, None, None, None, None, None],
-    ]
+    Args:
+        ticker: Ticker en pesos
+        tickerD: Ticker en dólares
+
+    Returns:
+        List: Lista de valores inicializados para el instrumento
+    """
+    return [ticker, tickerD, None, None, None, None, None, None, None, None]
+
+
+def load_instruments(path: str) -> List[List]:
+    """Lee instrumentos desde un CSV (ticker,tickerD). Ignora líneas vacías y las que empiezan con #."""
+    instrumentos = []
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.reader(f):
+            if not row or row[0].strip().startswith("#"):
+                continue
+            instrumentos.append(create_instrument(row[0].strip(), row[1].strip()))
+    return instrumentos
+
+
+def load_mis_activos(path: str) -> List[str]:
+    """Lee tickers desde un CSV (columna ticker). Ignora líneas vacías y las que empiezan con #."""
+    with open(path, newline="", encoding="utf-8") as f:
+        return [
+            row[0].strip()
+            for row in csv.reader(f)
+            if row and not row[0].strip().startswith("#")
+        ]
+    
+if __name__ == "__main__":
+
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+    
+    instrumentos = load_instruments(os.path.join(PROJECT_ROOT, "data/instrumentos.csv"))
+    mis_activos = load_mis_activos(os.path.join(PROJECT_ROOT, "data/mis_activos.csv"))
+
     symbols_to_subscribe = (
         ["MERV - XMEV - {0} - 24hs".format(inst[0]) for inst in instrumentos]
         + ["MERV - XMEV - {0} - 24hs".format(inst[1]) for inst in instrumentos]
@@ -766,7 +606,6 @@ if __name__ == "__main__":
         + ["MERV - XMEV - {0} - CI".format(inst[1]) for inst in instrumentos]
     )
 
-    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
     CONFIG_FILE_PATH = os.path.join(PROJECT_ROOT, "config.ini")
     if not os.path.exists(CONFIG_FILE_PATH):
         raise FileNotFoundError(
