@@ -394,7 +394,7 @@ class Executer:
         )
 
         if "error" in orden_response:
-            logger.error("Error enviando orden de compra en pesos.")
+            logger.error("Error enviando orden de compra en pesos: %s", orden_response["error"])
             return
 
         cl_ord_id = orden_response.get("order", {}).get("clientId")
