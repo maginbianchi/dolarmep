@@ -302,7 +302,9 @@ class Executer:
         )
 
         if "error" in orden_response:
-            logger.error("Error enviando orden de compra en dolares: %s", orden_response["error"])
+            logger.error(
+                "Error enviando orden de compra en dolares: %s", orden_response["error"]
+            )
             return
 
         cl_ord_id = orden_response.get("order", {}).get("clientId")
@@ -324,7 +326,9 @@ class Executer:
 
 
 # ====================== FUNCIÓN AUXILIAR ======================
-def create_instrument(ticker: str, tickerD: str, max_quant: int = 500) -> Dict:
+def create_instrument(
+    ticker: str, tickerD: str, min_quant: int = 1, max_quant: int = 500
+) -> Dict:
     """
     Crea un diccionario de instrumento con valores inicializados.
 
@@ -332,6 +336,7 @@ def create_instrument(ticker: str, tickerD: str, max_quant: int = 500) -> Dict:
         ticker: Ticker en pesos
         tickerD: Ticker en dólares
         max_quant: Cantidad máxima permitida
+        min_quant: Cantidad mínima permitida
 
     Returns:
         Dict: Diccionario de instrumento
@@ -351,6 +356,7 @@ def create_instrument(ticker: str, tickerD: str, max_quant: int = 500) -> Dict:
         "cierreAnteriorDolar": None,
         "minDolarCI": None,
         "minDolar": None,
+        "min_quant": min_quant,
         "max_quant": max_quant,
     }
 
@@ -364,7 +370,12 @@ def load_instruments(path: str) -> List[Dict]:
             if len(row) < 4 or row[2].strip() != "1":
                 continue  # sin flag o flag distinto de 1 → no operar
             instrumentos.append(
-                create_instrument(row[0].strip(), row[1].strip(), int(row[3].strip()))
+                create_instrument(
+                    row[0].strip(),
+                    row[1].strip(),
+                    int(row[3].strip()),
+                    int(row[4].strip()),
+                )
             )
     return instrumentos
 

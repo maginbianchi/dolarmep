@@ -10,8 +10,8 @@ import threading
 import csv
 from typing import List, Tuple, Optional
 
-RATIO = 1.0007
-RATIO_CI = 1.001
+RATIO = 1.0008
+RATIO_CI = 1.0012
 
 
 class DataFrameHandler:
