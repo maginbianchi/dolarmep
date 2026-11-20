@@ -1,9 +1,37 @@
-# I've run this command: git update-index --skip-worktree config.ini
-# to ignore changes to this file, but I still want to keep it in the repo.
-# To reset this, run: git update-index --no-skip-worktree config.ini
-# Same for token.csv
+# ---- Secretos (nunca al repo) ----
+# config.ini y token.csv están solo en disco. Plantilla versionada: config.example.ini
+config*.ini
+!config.example.ini
+token*.csv
+.env
+.env.*
+*.pem
+*.key
+.claude/settings.local.json
 
-config.ini
-token.csv
+# ---- Python ----
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# ---- Tests y herramientas ----
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# ---- Salidas de los bots ----
 *.log
-.venv
+logs/
+results/
+
+# ---- Windows / OneDrive ----
+desktop.ini
+Thumbs.db
+~$*
+*.tmp
