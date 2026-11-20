@@ -1,4 +1,6 @@
+import configparser
 from datetime import datetime
+import os
 import math
 import time
 import numpy as np
@@ -320,7 +322,22 @@ if __name__ == "__main__":
         ["IBITC", "IBITD", None, None, None, None],
         ["BRKBC", "BRKBD", None, None, None, None],
     ]
-    websocket_url = "wss://matriz.cocos.xoms.com.ar/ws?session_id=gqKxOszDYQQ7rKXTo3ypHhA%2FnaS%2BvkIeZGVFew7mxGElbIUxZv1DT4dpZo%2Fm8eny&conn_id=Vj2HkM3nQqa9VqD5N2NzJF2sdbX5UZ7%2B1OpC6CxnoNi4c2TuzJ4Tdg7GX%2FWDF0%2Bp"
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+    CONFIG_FILE_PATH = os.path.join(PROJECT_ROOT, "config.ini")
+    if not os.path.exists(CONFIG_FILE_PATH):
+        raise FileNotFoundError(
+            f"Credentials file not found at {CONFIG_FILE_PATH}. Please create it."
+        )
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE_PATH)
+
+    session_id = config["credentials"]["matriz_session_id"]
+    conn_id = config["credentials"]["matriz_conn_id"]
+
+    websocket_url = (
+        f"wss://matriz.cocos.xoms.com.ar/ws?session_id={session_id}&conn_id={conn_id}"
+    )
 
     dataframehandler = DataFrameHandler(instrumentos)
     websocketclient = WebSocketClient(websocket_url, dataframehandler)

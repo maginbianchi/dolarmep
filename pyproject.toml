@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dolarmep"
+version = "0.1.0"
+description = "Bots de arbitraje de dólar MEP: código compartido, compradores y analizadores"
+requires-python = ">=3.10"
+# Las dependencias de runtime se instalan desde requirements.txt
+
+[tool.setuptools]
+# arbitrador_v4 no se incluye: importa sus módulos por nombre (los tests lo agregan vía pythonpath)
+packages = ["comun", "compradores", "analizadores"]
+
+[tool.pytest.ini_options]
+# Todos los tests (comun, compradores, analizadores y arbitrador_v4) viven en tests/
+testpaths = ["tests"]
+pythonpath = ["tests", "arbitrador_v4"]

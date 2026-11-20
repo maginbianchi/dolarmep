@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Analizador (feed Matriz)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analizadores/analizador.py",
+            "args": ["--feed", "matriz"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Analizador (feed Primary)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analizadores/analizador.py",
+            "args": ["--feed", "primary"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "⚠️ REAL - Comprador pesos 24hs",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/compradores/comprador_pesos.py",
+            "args": ["--plazo", "24hs"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "⚠️ REAL - Comprador pesos CI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/compradores/comprador_pesos.py",
+            "args": ["--plazo", "CI"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "⚠️ REAL - Comprador dólares CI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/compradores/comprador_D_CI.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        }
+    ]
+}
